@@ -3,7 +3,7 @@
 
 
 namespace Zonkey {
-  namespace PDELab {
+  namespace MCMC {
 
 
     class Link{
