@@ -20,7 +20,7 @@ namespace Zonkey {
 
       void inline burnin(int est_ACT, int factor = 10){
         run(est_ACT);
-        int currentEss = markovChain.getEss();
+        int currentEss = markovChain.getMaxESS();
         double moreSamples = currentEss - factor;
         if (moreSamples > 0){ run(moreSamples); }
       }
@@ -28,7 +28,7 @@ namespace Zonkey {
 
       void inline run(int numSamples){
           if(markovChain.size() < 1){ // If this is the first sample
-            Link markovChains.push_back(F.prior());
+            Link markovChains.push_back(F.samplePrior());
             F.apply(markovChain.back());
             numSamples -= 1;
           }

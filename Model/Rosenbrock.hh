@@ -1,6 +1,9 @@
 #ifndef ZONKEY_MCMC_ROSENBROCK_HH
 #define ZONKEY_MCMC_ROSENBROCK_HH
 
+
+#include <Eigen/Dense>
+
 using namespace Eigen;
 using namespace std;
 
@@ -12,9 +15,39 @@ namespace Zonkey {
 
   public:
 
-      Rosenbrock(double a_ = 1.0, double b_ = 100.0) :
+      STOCHASTIC_DIM = 2;
+
+      Rosenbrock(double a_ = 1.0, double b_ = 100.0, double mean = 0.0, double sig = 1.0) :
         a(a_),
-        b(b_){    }
+        b(b_){
+          Eigen::VectorXd mu(STOCHASTIC_DIM);
+          mu(0) = mean; mu(1) = mean;
+          Matrix2d Sigma;
+          Sigam << sig, 0,
+                   0, sig;
+          invSigma = Sigma.inverse()
+          C = llt.compute(Sigma);
+      }
+
+      double logPrior(Link & u){
+        Eigen::VectorXd xi = u.getTheta();
+        Eigen::VectorXd x(xi.size());
+        for (int i = 0; i < xi.size(); i++){
+          x(i) = xi(i) - mu;
+        }
+        return -0.5 * (x.tranpose * invSigma) * x
+      } // sample logPrior
+
+      Eigen::VectorXd samplePrior(){
+        std::random_device rd;
+        std::normal_distribution<double> dis(0.0,1.0);
+        std::mt19937 gen(rd());
+        Eigen::VectorXd z(STOCHASTIC_DIM);
+        for (int i = 0; i < STOCHASTIC_DIM; i++){
+          z(i) = dis(gen);
+        }
+        return C * z + mu; // Sample from prior - note Sigma = C' * C
+      } // samplePrior
 
       double logDensity(LINK & u){
         Eigen::VectorXd xi = u.getTheta();
@@ -29,11 +62,10 @@ namespace Zonkey {
       }
 
   private:
-
     double a, b; // Parameters
-
+    Matrix2d invSigma, C;
   };
 
 }
 }
-#endif /* chain_h */
+#endif /* end Zonkey::Models::Rosenbrock */

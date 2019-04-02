@@ -41,36 +41,23 @@ namespace Zonkey {
 
       int inline size(){ return theChain.size(); }
 
-
-      double getESS(std::vector<double>& myChain){
-
-        int numSamples = myChain.size(); // Number of current samples
-
-        assert(numSamples > 0); // Must have at least one sample
-
-        if (numSamples < 2) // Just return 0.0;
-          return 0.0;
-
-        double chainMean = std::accumulate(myChain.begin(), myChain.end(),0.0) / numSamples;
-
-        Eigen::FFT<double> fft;
-
-        int tmax    = floor(numSamples / 2);
-        double Stau = 1.5;
-
-
-        Eigen::Matrix<std::complex<double>, Eigen::Dynamic, 1> freqVec;
-
-        Eigen::Matrix<std::complex<double>, Eigen::Dynamic,1> timeVec = Eigen::Matrix<std::complex<double>, Eigen::Dynamic, 1>::Zero(numSamples + tmax);
-
-        for (int i = 0; i < numSamples; i++) {
-          timeVec(i) = std::complex<double>(myChain[i] - chainMean, 0.0);
+      Eigen::VectorXd EffectiveSampleSizes(){
+        int numParam = theChain[0].size(); // Number of Parameters
+        Eigen::Vector ESS(numParam);
+        for (int j = 0; j < numParam; i++)
+          std::vector<double> = vals(theChain.size());
+          for (int i = 0; i < theChain.size(); i++){
+            vals[i] = theChain[i].getTheta(j);
+          }
+          ESS(j) = getESS(vals);
         }
 
+      double getMaxESS(){
+        Eigen::VectorXd ESS = EffectiveSampleSizes();
+        return EffectiveSampleSizes.maxCoeff();
+      }
 
-        fft.fwd(freqVec, timeVec);
 
-}
 
 
   private:

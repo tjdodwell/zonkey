@@ -14,8 +14,6 @@ namespace Zonkey {
     template<typename LINK>
     class SeqRandomWalk{
 
-      typename typedef Zonkey::MCMC::Link LINK;
-
       public:
 
         SeqRandomWalk(Eigen::VectorXd param_) param(param_){
