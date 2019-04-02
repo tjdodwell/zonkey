@@ -1,15 +1,7 @@
 #ifndef ZONKEY_MCMC_SINGLE_CHAIN_HH
 #define ZONKEY_MCMC_SINGLE_CHAIN_HH
 
-
-#include <sys/time.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <assert.h>
-#include <iostream>
-#include <algorithm>
-#include <fstream>
-
+#include <Eigen/Dense>
 #include <unsupported/Eigen/FFT>
 
 using namespace Eigen;
@@ -23,39 +15,39 @@ namespace Zonkey {
 
   public:
 
-      SingleChain(){  }
+      SingleChain(){ }
 
 
-      void addLink(Link& newLink){
-
-        theChain.push_back(newLink);
-
-      }
-
-      Link& operator[] (const int index){
-        return theChain[index];
-      }
-
-
-      void inline resize(int N){  theChain.resize(N); }
-
-      int inline size(){ return theChain.size(); }
-
-      Eigen::VectorXd EffectiveSampleSizes(){
-        int numParam = theChain[0].size(); // Number of Parameters
-        Eigen::Vector ESS(numParam);
-        for (int j = 0; j < numParam; i++)
-          std::vector<double> = vals(theChain.size());
-          for (int i = 0; i < theChain.size(); i++){
-            vals[i] = theChain[i].getTheta(j);
-          }
-          ESS(j) = getESS(vals);
-        }
-
-      double getMaxESS(){
-        Eigen::VectorXd ESS = EffectiveSampleSizes();
-        return EffectiveSampleSizes.maxCoeff();
-      }
+      // void addLink(Link& newLink){
+      //
+      //   theChain.push_back(newLink);
+      //
+      // }
+      //
+      // Link& operator[] (const int index){
+      //   return theChain[index];
+      // }
+      //
+      //
+      // void inline resize(int N){  theChain.resize(N); }
+      //
+      // int inline size(){ return theChain.size(); }
+      //
+      // Eigen::VectorXd EffectiveSampleSizes(){
+      //   int numParam = theChain[0].size(); // Number of Parameters
+      //   Eigen::VectorXd ESS(numParam);
+      //   for (int j = 0; j < numParam; j++){
+      //     std::vector<double> vals(theChain.size());
+      //     for (int i = 0; i < theChain.size(); i++){
+      //       vals[i] = theChain[i].getTheta(j);
+      //     }
+      //     ESS(j) = getESS(vals);
+      //   }
+      //
+      // double getMaxESS(){
+      //   Eigen::VectorXd ESS = EffectiveSampleSizes();
+      //   return EffectiveSampleSizes.maxCoeff();
+      // }
 
 
 

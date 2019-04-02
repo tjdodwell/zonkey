@@ -5,7 +5,7 @@
 
 
 #include<random>
-#include<assert>
+#include<cassert>
 
 
 namespace Zonkey {
@@ -16,13 +16,13 @@ namespace Zonkey {
 
       public:
 
-        SeqRandomWalk(Eigen::VectorXd param_) param(param_){
+        SeqRandomWalk(Eigen::VectorXd param_):param(param_){
           assert(param.size() == 1 && "param input wrong length for SeqRandomWalk, should be length 1"); //
         }
 
         LINK apply(const LINK& currentState){
           Eigen::VectorXd xi = currentState.getTheta();
-          Eigen::Vector xip(xi.size());
+          Eigen::VectorXd xip(xi.size());
           std::random_device rd;
           std::normal_distribution<double> dis(0.0,1.0);
           std::mt19937 gen(rd());
@@ -33,6 +33,8 @@ namespace Zonkey {
           prop.setTheta(xip);
           return prop; // Return Proposal from SeqRandomWalk
         }
+
+        acceptReject(markovChain.back(),  theta_p)
 
         void updateParameters(Eigen::VectorXd & newParam){ param = newParam; }
 

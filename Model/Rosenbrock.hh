@@ -7,32 +7,32 @@
 using namespace Eigen;
 using namespace std;
 
+#include <random>
+
 namespace Zonkey {
   namespace Models {
 
-  template<typename LINK>
+  template<typename Link, int STOCHASTIC_DIM>
   class Rosenbrock{
 
   public:
 
-      STOCHASTIC_DIM = 2;
-
       Rosenbrock(double a_ = 1.0, double b_ = 100.0, double mean = 0.0, double sig = 1.0) :
         a(a_),
         b(b_){
-          Eigen::VectorXd mu(STOCHASTIC_DIM);
+          mu.resize(STOCHASTIC_DIM);
           mu(0) = mean; mu(1) = mean;
           Matrix2d Sigma;
-          Sigam << sig, 0,
+          Sigma << sig, 0,
                    0, sig;
-          invSigma = Sigma.inverse()
-          C = llt.compute(Sigma);
+          invSigma = Sigma.inverse();
+          C = Sigma.llt().matrixL();
       }
 
       double logPrior(Link & u){
         Eigen::VectorXd xi = u.getTheta();
         Eigen::VectorXd x = xi - mu;
-        return -0.5 * (x.tranpose() * invSigma) * x
+        return -0.5 * (x.transpose() * invSigma) * x;
       } // sample logPrior
 
       Eigen::VectorXd samplePrior(){
@@ -46,12 +46,12 @@ namespace Zonkey {
         return C * z + mu; // Sample from prior - note Sigma = C' * C
       } // samplePrior
 
-      double logDensity(LINK & u){
+      double logDensity(Link & u){
         Eigen::VectorXd xi = u.getTheta();
-        return pow((a - xi[0]),2) + b * pow(xi[1] - xi[0] * x[0],2);
+        return pow((a - xi[0]),2) + b * pow(xi[1] - xi[0] * xi[0],2);
       }
 
-      Eigen::VectorXd grad(LINK & u){
+      Eigen::VectorXd grad(Link & u){
         Eigen::VectorXd xi = u.getTheta();
         Eigen::VectorXd grad(2);
         grad[0] = 2.0 * (a - xi[0]) + 4.0 * b * (xi[1] - xi[0] * xi[0]) * xi[0];
@@ -61,6 +61,7 @@ namespace Zonkey {
   private:
     double a, b; // Parameters
     Matrix2d invSigma, C;
+    Eigen::VectorXd mu;
   };
 
 }
