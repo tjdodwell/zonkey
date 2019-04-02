@@ -1,13 +1,13 @@
 #ifndef ZONKEY_MCMC_ROSENBROCK_HH
 #define ZONKEY_MCMC_ROSENBROCK_HH
 
-
 using namespace Eigen;
 using namespace std;
 
 namespace Zonkey {
   namespace Models {
 
+  template<typename LINK>
   class Rosenbrock{
 
   public:
@@ -16,12 +16,12 @@ namespace Zonkey {
         a(a_),
         b(b_){    }
 
-      double apply(const Link & u){
+      double logDensity(LINK & u){
         Eigen::VectorXd xi = u.getTheta();
         return pow((a - xi[0]),2) + b * pow(xi[1] - xi[0] * x[0],2);
       }
 
-      Eigen::VectorXd grad(const Link & u){
+      Eigen::VectorXd grad(LINK & u){
         Eigen::VectorXd xi = u.getTheta();
         Eigen::VectorXd grad(2);
         grad[0] = 2.0 * (a - xi[0]) + 4.0 * b * (xi[1] - xi[0] * xi[0]) * xi[0];
@@ -31,7 +31,6 @@ namespace Zonkey {
   private:
 
     double a, b; // Parameters
-    
 
   };
 
