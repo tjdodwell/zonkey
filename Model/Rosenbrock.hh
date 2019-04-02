@@ -31,11 +31,8 @@ namespace Zonkey {
 
       double logPrior(Link & u){
         Eigen::VectorXd xi = u.getTheta();
-        Eigen::VectorXd x(xi.size());
-        for (int i = 0; i < xi.size(); i++){
-          x(i) = xi(i) - mu;
-        }
-        return -0.5 * (x.tranpose * invSigma) * x
+        Eigen::VectorXd x = xi - mu;
+        return -0.5 * (x.tranpose() * invSigma) * x
       } // sample logPrior
 
       Eigen::VectorXd samplePrior(){
