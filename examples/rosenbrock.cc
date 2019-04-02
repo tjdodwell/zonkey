@@ -44,6 +44,8 @@ int main()
 
   Zonkey::MCMC::MetropolisHastings<LINK,CHAIN,PROPOSAL,MODEL> myMCMC(F,myProposal,markovChain);
 
+  myMCMC.burnin(1000,10);
+
 
   return 0;
 }

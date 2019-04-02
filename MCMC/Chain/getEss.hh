@@ -9,6 +9,7 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
+#include <numeric>
 
 #include <unsupported/Eigen/FFT>
 

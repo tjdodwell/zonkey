@@ -31,13 +31,17 @@ namespace Zonkey {
 
       void inline run(int numSamples){
           if(markovChain.size() < 1){ // If this is the first sample
-            markovChain.push_back (F.samplePrior());
-            F.apply(markovChain.back());
+
+            Eigen::VectorXd theta_fP = F.samplePrior();
+            Link firstPoint(theta_fP);
+            markovChain.addLink(firstPoint);
+            F.logDensity(markovChain.back());
             numSamples -= 1;
           }
           for (int i = 0; i < numSamples; i++){
             Link theta_p = proposal.apply(markovChain.back()); // Make a proposal
-            F.apply(theta_p); // Apply forward Model
+
+            F.logDensity(theta_p);  // Apply forward Model
 
 
             // Accept / Reject Step
@@ -45,10 +49,10 @@ namespace Zonkey {
 
             if(accept){
               theta_p.setAccepted(1);
-              markovChain.push_back(theta_p);
+              markovChain.addLink(theta_p);
             }
             else {
-              markovChain.push_back(markovChain.back());
+              markovChain.addLink(markovChain.back());
             }
           }
       }

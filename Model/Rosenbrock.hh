@@ -46,9 +46,10 @@ namespace Zonkey {
         return C * z + mu; // Sample from prior - note Sigma = C' * C
       } // samplePrior
 
-      double logDensity(Link & u){
+      void logDensity(Link & u){
         Eigen::VectorXd xi = u.getTheta();
-        return pow((a - xi[0]),2) + b * pow(xi[1] - xi[0] * xi[0],2);
+        double ld = pow((a - xi[0]),2) + b * pow(xi[1] - xi[0] * xi[0],2) + this->logPrior(u);
+        u.setlogPhi(ld);
       }
 
       Eigen::VectorXd grad(Link & u){
