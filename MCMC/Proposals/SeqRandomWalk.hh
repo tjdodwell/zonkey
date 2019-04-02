@@ -34,7 +34,9 @@ namespace Zonkey {
           return prop; // Return Proposal from SeqRandomWalk
         }
 
-        acceptReject(markovChain.back(),  theta_p)
+        bool acceptReject(LINK& u,  LINK& v){
+          return true;
+        }
 
         void updateParameters(Eigen::VectorXd & newParam){ param = newParam; }
 

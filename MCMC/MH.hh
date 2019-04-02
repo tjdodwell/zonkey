@@ -41,7 +41,7 @@ namespace Zonkey {
 
 
             // Accept / Reject Step
-            bool accept = proposal.acceptReject(markovChain.back(),  theta_p)
+            bool accept = proposal.acceptReject(markovChain.back(),  theta_p);
 
             if(accept){
               theta_p.setAccepted(1);
@@ -69,4 +69,4 @@ namespace Zonkey {
 
 }
 }
-#endif /* chain_h */
+#endif // ZONKEY_MCMC_MH_HH
