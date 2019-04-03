@@ -20,12 +20,17 @@ int main()
 
   // getParameters
   double a = 1.0;
-  double b = 100.0;
+  double b = 10.0;
   double mu = 0.0;
   double sig = 1.0;
 
+  int burninSamples = 100;
+  int burningFactor = 10;
+
+  int Nsamples = 10000;
+
   Eigen::VectorXd randomWalk_parameters(1);
-  randomWalk_parameters(0) = 0.3;
+  randomWalk_parameters(0) = 0.1;
 
   std::cout << "== Starting Rosenbrock Example ==" << std::endl;
 
@@ -44,7 +49,13 @@ int main()
 
   Zonkey::MCMC::MetropolisHastings<LINK,CHAIN,PROPOSAL,MODEL> myMCMC(F,myProposal,markovChain);
 
-  myMCMC.burnin(1000,10);
+  myMCMC.burnin(burninSamples,burningFactor);
+
+  myMCMC.run(Nsamples);
+
+  auto theChain = myMCMC.getChain();
+
+  std::cout << "Effective Sample size / Samples = " << theChain.getMaxESS() << " / " << theChain.size() << std::endl;
 
 
   return 0;

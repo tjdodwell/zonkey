@@ -59,7 +59,6 @@ public:
 	void setTheta(VectorXd & vals){
 		assert(vals.size() == STOCHASTIC_DIM);
 		theta = vals;
-    std::cout << vals << std::endl;
 	}
 
 

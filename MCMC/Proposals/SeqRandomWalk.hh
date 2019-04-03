@@ -4,8 +4,9 @@
 #include "../Chain/Link.hh"
 
 
-#include<random>
-#include<cassert>
+#include <random>
+#include <cassert>
+#include <cmath>
 
 
 namespace Zonkey {
@@ -35,7 +36,22 @@ namespace Zonkey {
         }
 
         bool acceptReject(LINK& u,  LINK& v){
-          return true;
+
+          bool accept = false;
+
+          std::random_device rd;
+          std::mt19937 gen(rd());
+          std::uniform_real_distribution<> dis(0.0, 1.0);
+
+          double logalpha = std::log(dis(gen));
+
+          double logtestProbability = (v.getlogPhi() + v.getlogPi0()) - (u.getlogPhi() + u.getlogPi0());
+
+          if (logalpha < logtestProbability){
+            accept = true;
+          }
+
+          return accept;
         }
 
         void updateParameters(Eigen::VectorXd & newParam){ param = newParam; }

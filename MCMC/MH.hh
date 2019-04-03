@@ -23,8 +23,8 @@ namespace Zonkey {
 
       void inline burnin(int est_ACT, int factor = 10){
         run(est_ACT);
-        int currentEss = markovChain.getMaxESS();
-        double moreSamples = currentEss - factor;
+        int currentEss = markovChain.getMaxESS() + 1; // Rounding up
+        double moreSamples = est_ACT- factor * currentEss;
         if (moreSamples > 0){ run(moreSamples); }
       }
 
@@ -35,14 +35,13 @@ namespace Zonkey {
             Eigen::VectorXd theta_fP = F.samplePrior();
             Link firstPoint(theta_fP);
             markovChain.addLink(firstPoint);
-            F.logDensity(markovChain.back());
+            F.apply(markovChain.back());
             numSamples -= 1;
           }
           for (int i = 0; i < numSamples; i++){
             Link theta_p = proposal.apply(markovChain.back()); // Make a proposal
 
-            F.logDensity(theta_p);  // Apply forward Model
-
+            F.apply(theta_p);  // Apply forward Model
 
             // Accept / Reject Step
             bool accept = proposal.acceptReject(markovChain.back(),  theta_p);
@@ -59,6 +58,10 @@ namespace Zonkey {
 
       int inline size(){
         return markovChain.size();
+      }
+
+      Chain getChain(){
+        return markovChain;
       }
 
 

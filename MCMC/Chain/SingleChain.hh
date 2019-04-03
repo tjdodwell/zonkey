@@ -42,7 +42,11 @@ namespace Zonkey {
       int inline size(){ return theChain.size(); }
 
       Eigen::VectorXd EffectiveSampleSizes(){
+
+        std::cout << "Inside ESS and theChain size is now " << theChain.size() << std::endl;
         int numParam = theChain[0].size(); // Number of Parameters
+
+        std::cout << "Number of Parameters is " << numParam << std::endl;
         Eigen::VectorXd ESS(numParam);
         for (int j = 0; j < numParam; j++){
           std::vector<double> vals(theChain.size());
@@ -51,9 +55,12 @@ namespace Zonkey {
           }
           ESS(j) = getESS(vals);
         }
+        return ESS;
       }
 
       double getMaxESS(){
+
+        std::cout << "Calculating Max ESS" << std::endl;
         Eigen::VectorXd ESS = this->EffectiveSampleSizes();
         double max = ESS.maxCoeff();
         return max;
