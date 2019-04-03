@@ -9,6 +9,7 @@
 #include "../MCMC/Chain/SingleChain.hh"
 
 #include "../MCMC/Proposals/SeqRandomWalk.hh"
+#include "../MCMC/Proposals/SeqPCN.hh"
 
 #include "../Model/Rosenbrock.hh"
 
@@ -32,7 +33,9 @@ int main()
   Eigen::VectorXd randomWalk_parameters(1);
   randomWalk_parameters(0) = 0.1;
 
-  std::cout << "== Starting Rosenbrock Example ==" << std::endl;
+  Eigen::VectorXd PCN_parameters(2);
+  PCN_parameters(0) = 0.3;
+  PCN_parameters(1) = 1.0;
 
   const int STOCHASTIC_DIM = 2;
 
@@ -41,8 +44,11 @@ int main()
   typedef Zonkey::MCMC::SingleChain<LINK> CHAIN;
     CHAIN markovChain;
 
-  typedef Zonkey::MCMC::SeqRandomWalk<LINK> PROPOSAL;
-    PROPOSAL myProposal(randomWalk_parameters);
+//  typedef Zonkey::MCMC::SeqRandomWalk<LINK> PROPOSAL;
+//    PROPOSAL myProposal(randomWalk_parameters);
+  typedef Zonkey::MCMC::SeqPCN<LINK> PROPOSAL;
+
+    PROPOSAL myProposal(PCN_parameters);
 
   typedef Zonkey::Models::Rosenbrock<LINK,STOCHASTIC_DIM> MODEL;
     MODEL F(a,b,mu,sig);
