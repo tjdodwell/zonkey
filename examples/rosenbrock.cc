@@ -3,6 +3,12 @@
 
 
 #include <iostream>
+#include <iomanip>
+#include <time.h>
+#include <cmath>
+//#include <windows.h>
+#include <string>
+
 #include <Eigen/Dense>
 
 #include "../MCMC/Chain/Link.hh"
@@ -14,6 +20,25 @@
 #include "../Model/Rosenbrock.hh"
 
 #include "../MCMC/MH.hh"
+
+using namespace std;
+
+string printProg(int x){
+    string s;
+    s="[";
+    for (int i=1;i<=(100/2);i++){
+        if (i<=(x/2) || x==100)
+            s+="=";
+        else if (i==(x/2))
+            s+=">";
+        else
+            s+=" ";
+    }
+
+    s+="]";
+    return s;
+}
+
 
 
 int main()
@@ -62,6 +87,17 @@ int main()
   auto theChain = myMCMC.getChain();
 
   std::cout << "Effective Sample size / Samples = " << theChain.getMaxESS() << " / " << theChain.size() << std::endl;
+
+  srand(time(0));
+    int x = 0;
+    cout << "Working ..." << endl;
+    for(int i = 0; i<100; i++){
+        int r = rand() % 1000;
+        x++;
+        cout << "\r" << setw(-20) << printProg(x) << " " << x << "% completed." << flush;
+    }
+
+    cout << endl << endl << "Operation completed successfully.\n" << flush;
 
 
   return 0;
