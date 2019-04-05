@@ -35,7 +35,7 @@ namespace Zonkey {
         return -0.5 * (x.transpose() * invSigma) * x;
       } // sample logPrior
 
-      Eigen::VectorXd samplePrior(){
+      Eigen::VectorXd samplePrior(int level = 0){
         std::random_device rd;
         std::normal_distribution<double> dis(0.0,1.0);
         std::mt19937 gen(rd());

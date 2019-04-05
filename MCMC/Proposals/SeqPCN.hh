@@ -45,7 +45,7 @@ namespace Zonkey {
 
           double logalpha = std::log(dis(gen));
 
-          double logtestProbability = (v.getlogPhi() + v.getlogPi0()) - (u.getlogPhi() + u.getlogPi0());
+          double logtestProbability = v.getlogPhi() - u.getlogPhi();
 
           if (logalpha < logtestProbability){
             accept = true;

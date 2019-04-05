@@ -19,25 +19,18 @@ namespace Zonkey {
 
   public:
 
-      typedef typename Link myLink;
+      typedef typename Link theLink;
 
       SingleChain(){ }
 
 
-      void addLink(Link& newLink){
-
-        theChain.push_back(newLink);
-
-      }
+      void addLink(Link& newLink){  theChain.push_back(newLink);  }
 
       Link& back(){return theChain.back(); }
 
       Link& operator[] (const int index){
         return theChain[index];
       }
-
-
-
 
       void inline resize(int N){  theChain.resize(N); }
 
