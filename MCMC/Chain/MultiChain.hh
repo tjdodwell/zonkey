@@ -6,13 +6,11 @@
 namespace Zonkey {
   namespace MCMC {
 
-template<class Chain>
+template<class Link,class Chain>
 class MultiChain{
 
 
   public:
-
-    typedef typename Chain::theLink Link;
 
     MultiChain(){  }
 
@@ -20,16 +18,16 @@ class MultiChain{
 
     Chain getLevel(int l){ return multiChain[l]; }
 
-    theLink& back(int l){ return multiChain[l].back(); }
+    Link& back(int l){ return multiChain[l].back(); }
 
-    void addLink(theLink& newLink, int level){  multiChain[level].push_back(newLink);   }
+    void addLink(Link& newLink, int level){  multiChain[level].push_back(newLink);   }
 
     Eigen::VectorXd getTheta(int level, int index){
-      auto thisChain = multiChain[level]
+      auto thisChain = multiChain[level];
       return thisChain[index].getTheta();
     }
 
-    int size(int level){ return multichain[level].size() }
+    int size(int level){ return multiChain[level].size(); }
 
   private:
 
