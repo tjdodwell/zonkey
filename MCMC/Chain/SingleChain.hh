@@ -19,8 +19,6 @@ namespace Zonkey {
 
   public:
 
-      typedef typename Link theLink;
-
       SingleChain(){ }
 
 
