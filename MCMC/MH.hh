@@ -24,14 +24,14 @@ namespace Zonkey {
       void inline burnin(int est_ACT, int factor = 10){
         run(est_ACT,"Initial Burnin . . . ");
         int currentEss = markovChain.getMaxESS() + 1; // Rounding up
-        double moreSamples = est_ACT- factor * currentEss;
+        double moreSamples = est_ACT - factor * currentEss;
         if (moreSamples > 0){ run(moreSamples,"More burnin samples . . . "); }
       }
 
 
       void inline run(int numSamples, string printout = "Computing Samples ..."){
-          if(markovChain.size() < 1){ // If this is the first sample
 
+          if(markovChain.size() < 1){ // If this is the first sample
             Eigen::VectorXd theta_fP = F.samplePrior();
             Link firstPoint(theta_fP);
             markovChain.addLink(firstPoint);
@@ -44,6 +44,7 @@ namespace Zonkey {
 
 
           for (int i = 0; i < numSamples; i++){
+            
             Link theta_p = proposal.apply(markovChain.back()); // Make a proposal
 
             F.apply(theta_p);  // Apply forward Model
@@ -51,14 +52,10 @@ namespace Zonkey {
             // Accept / Reject Step
             bool accept = proposal.acceptReject(markovChain.back(),  theta_p);
 
-            if(accept){
-              theta_p.setAccepted(1);
-              markovChain.addLink(theta_p);
-            }
-            else {
-              markovChain.addLink(markovChain.back());
-            }
+            if(accept){ theta_p.setAccepted(1); markovChain.addLink(theta_p); }
+            else {  markovChain.addLink(markovChain.back());  }
             x++;
+
             int num = 100 * x / numSamples;
             cout << "\r" << setw(-20) << printProg(num) << " " << num << "% completed." << flush;
 

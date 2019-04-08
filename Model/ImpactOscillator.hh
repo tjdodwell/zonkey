@@ -17,20 +17,34 @@ namespace Zonkey {
 
   public:
 
-      ImpactOscillator(double a_ = 1.0, double b_ = 100.0, double mean = 0.0, double sig = 1.0) :
-        a(a_),
-        b(b_){
+      ImpactOscillator(){
+
+          L = 3; // Max number of Levels
+
           mu.resize(STOCHASTIC_DIM);
-          mu(0) = mean; mu(1) = mean;
-          Matrix2d Sigma;
-          Sigma << sig, 0,
-                   0, sig;
+
+          mu(0) = 0.0; // initial displacement
+          mu(1) = 0.1; // initial velocity
+
+          mu(2) = 1.0; // stiffness
+          mu(3) = 100.0; // contact stiffness
+          mu(4) = 0.1; // Amplitude of osciallations of contact plate
+          mu(5) = 1.0; // Frequency of contact plate
+
+          // Diagonal MatrixXd
+
+          double sig = 1.0;
+
+          MatrixXd Sigma = MatrixXd::Identity(6,6);
+
+          Sigma *= sig;
+
           invSigma = Sigma.inverse();
           C = Sigma.llt().matrixL();
 
           setLevels();
 
-          int numDataPoints = 10;
+          numDataPoints = 10;
 
           totalTime = 1.0;
 
@@ -39,22 +53,41 @@ namespace Zonkey {
           data_time.resize(numDataPoints);
           data_val.resize(numDataPoints);
 
-          // This is the data generated using an adaptive high-fidelity time stepper
+          // This is the data generated using an adaptive high-fidelity time stepper in Matlab
 
-
-
-
+          double data_step = totalTime / numDataPoints;
+          data_time[0] = data_step;
+          for (int i = 1; i < numDataPoints; i++){
+            data_time[i] = data_time[i-1] + data_step;
+          }
 
           // This is generated from data values, plus some Gaussian Noise
 
+          Eigen::VectorXd gauss_noise(numDataPoints);
 
+          gauss_noise(0) = 0.5377;
+          gauss_noise(1) = 1.8339;
+          gauss_noise(2) = -2.2588;
+          gauss_noise(3) = 0.8622;
+          gauss_noise(4) = 0.3188;
+          gauss_noise(5) = -1.3077;
+          gauss_noise(6) = -0.4336;
+          gauss_noise(7) = 0.3426;
+          gauss_noise(8) = 3.5784;
+          gauss_noise(9) = 2.7694;
 
+          //
 
+          MatrixXd Sigmad = MatrixXd::Identity(numDataPoints, numDataPoints);
+
+          invSigmad = Sigmad.inverse();
+
+          data_val = data_val + invSigmad * gauss_noise;
 
 
       }
 
-      void setLevels(int numSteps0 = 10, double factor = 2.0;){
+      void setLevels(int numSteps0 = 10, double factor = 2.0){
         numSteps.resize(L);
         numSteps[0] = numSteps0;
         for (int i = 1; i < numSteps.size(); i++){
@@ -89,11 +122,11 @@ namespace Zonkey {
         double initialDisplacement = xi(0);
         double initialVelocity = xi(1);
 
-        dt = totalTime / numSteps[level];
+        double dt = totalTime / numSteps[level];
         x[1] = initialDisplacement;
         x[0] = x[1] - dt * initialVelocity;
 
-        Eigen::VectorXd F(data_points); // Container for forward model.
+        Eigen::VectorXd F(numDataPoints); // Container for forward model.
         time[0] = -dt;
         time[1] = 0.0;
         int k = 0;
@@ -111,7 +144,7 @@ namespace Zonkey {
         // Compute logLikelihood
         Eigen::VectorXd misMatch(numDataPoints);
         for (int k = 0; k < numDataPoints; k++){  misMatch(k) = (F(k) - data_val[k]) * (F(k) - data_val[k]); }
-        double logLikelihood = -0.5 * misMatch.transpose() * ( invSigma * misMatch );
+        double logLikelihood = -0.5 * misMatch.transpose() * ( invSigmad * misMatch );
 
         // Save information about proposal
         u.setlogPhi(logLikelihood);
@@ -121,7 +154,8 @@ namespace Zonkey {
 
       double inline forcing(double t, double x, Eigen::VectorXd & xi){
         // This model assumes linear spring and one-sided Hertz Contact
-        return xi(2) * x - xi(3) * std::pow(x,3./2.);
+        double offsetOfContactSurface = x - xi(4) * std::math(xi(5) * t);
+        return - xi(2) * x - xi(3) * std::real(std::pow(offsetOfContactSurface,3./2.));
       }
 
       Eigen::VectorXd grad(Link & u){
@@ -132,13 +166,15 @@ namespace Zonkey {
 
   private:
 
-      double a, b; // Parameters
-      Matrix2d invSigma, C;
-      Eigen::VectorXd mu;
-
+      MatrixXd invSigma, C, invSigmad;
+      Eigen::VectorXd mu, data_val;
       double totalTime;
-
       std::vector<int> numSteps;
+
+      std::vector<double> data_time;
+
+      int L, numDataPoints;
+
   };
 
 }

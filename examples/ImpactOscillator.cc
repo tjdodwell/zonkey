@@ -18,7 +18,7 @@
 #include "../MCMC/Proposals/SeqRandomWalk.hh"
 #include "../MCMC/Proposals/SeqPCN.hh"
 
-#include "../Model/SimpleHarmonicMotion.hh"
+#include "../Model/ImpactOscillator.hh"
 
 #include "../MCMC/multilevelMH.hh"
 
@@ -46,7 +46,7 @@ int main()
   PCN_parameters(0) = 0.3;
   PCN_parameters(1) = 1.0;
 
-  const int STOCHASTIC_DIM = 2;
+  const int STOCHASTIC_DIM = 6;
 
   typedef Zonkey::MCMC::Link<STOCHASTIC_DIM,0> LINK;
 
@@ -57,8 +57,8 @@ int main()
   typedef Zonkey::MCMC::SeqPCN<LINK> PROPOSAL;
     PROPOSAL myProposal(PCN_parameters);
 
-  typedef Zonkey::Models::SimpleHarmonicMotion<LINK,STOCHASTIC_DIM> MODEL;
-    MODEL F(a,b,mu,sig);
+  typedef Zonkey::Models::ImpactOscillator<LINK,STOCHASTIC_DIM> MODEL;
+    MODEL F;
 
 
 
