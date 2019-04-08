@@ -25,7 +25,6 @@ namespace Zonkey {
 
           mu(0) = 0.0; // initial displacement
           mu(1) = 0.1; // initial velocity
-
           mu(2) = 1.0; // stiffness
           mu(3) = 100.0; // contact stiffness
           mu(4) = 0.1; // Amplitude of osciallations of contact plate
@@ -46,9 +45,9 @@ namespace Zonkey {
 
           numDataPoints = 10;
 
-          totalTime = 1.0;
+          totalTime = 20.0;
 
-          double sigf = 1.0;
+          double sigf = 0.0229;
 
           data_time.resize(numDataPoints);
           data_val.resize(numDataPoints);
@@ -78,7 +77,20 @@ namespace Zonkey {
 
           //
 
+          data_val(0) = 0.0908;
+          data_val(1) = -0.1594;
+          data_val(2) = -0.4049;
+          data_val(3) = 0.4645;
+          data_val(4) = -0.4233;
+          data_val(5) = -0.3248;
+          data_val(6) = 0.3536;
+          data_val(7) = -0.3671;
+          data_val(8) = -0.1754;
+          data_val(9) = 0.0643;
+
           MatrixXd Sigmad = MatrixXd::Identity(numDataPoints, numDataPoints);
+
+          Sigmad *= sigf;
 
           invSigmad = Sigmad.inverse();
 
@@ -154,7 +166,7 @@ namespace Zonkey {
 
       double inline forcing(double t, double x, Eigen::VectorXd & xi){
         // This model assumes linear spring and one-sided Hertz Contact
-        double offsetOfContactSurface = x - xi(4) * std::math(xi(5) * t);
+        double offsetOfContactSurface = x - xi(4) * std::sin(xi(5) * t);
         return - xi(2) * x - xi(3) * std::real(std::pow(offsetOfContactSurface,3./2.));
       }
 
