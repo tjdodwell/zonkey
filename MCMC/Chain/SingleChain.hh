@@ -4,6 +4,8 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/FFT>
 
+#include <algorithm>
+
 #include "getEss.hh"
 
 using namespace Eigen;
@@ -37,9 +39,12 @@ namespace Zonkey {
       Eigen::VectorXd EffectiveSampleSizes(){
         int numParam = theChain[0].size(); // Number of Parameters
         Eigen::VectorXd ESS(numParam);
+
+        int numSamplesUsed = std::min(this->size(),10000);
+
         for (int j = 0; j < numParam; j++){
-          std::vector<double> vals(theChain.size());
-          for (int i = 0; i < theChain.size(); i++){
+          std::vector<double> vals(numSamplesUsed);
+          for (int i = this->size() - numSamplesUsed; i < this->size(); i++){
             vals[i] = theChain[i].getTheta(j);
           }
           ESS(j) = getESS(vals);
@@ -53,6 +58,21 @@ namespace Zonkey {
         return max;
       }
 
+      double getMinESS(){
+        Eigen::VectorXd ESS = this->EffectiveSampleSizes();
+        return ESS.minCoeff();
+      }
+
+      double acceptRatio(int lastNSamples = -1){
+        if (lastNSamples < 0){lastNSamples = this->size();}
+
+        int numAccept = 0;
+         for (int i = this->size() - lastNSamples; i < this->size(); i++){
+            numAccept += theChain[i].getAccept();
+         }
+         double ratio = (double) numAccept / lastNSamples;
+         return ratio;
+      }
 
 
 

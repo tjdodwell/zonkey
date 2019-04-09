@@ -44,7 +44,7 @@ namespace Zonkey {
 
 
           for (int i = 0; i < numSamples; i++){
-            
+
             Link theta_p = proposal.apply(markovChain.back()); // Make a proposal
 
             F.apply(theta_p);  // Apply forward Model
@@ -52,7 +52,9 @@ namespace Zonkey {
             // Accept / Reject Step
             bool accept = proposal.acceptReject(markovChain.back(),  theta_p);
 
-            if(accept){ theta_p.setAccepted(1); markovChain.addLink(theta_p); }
+            if(accept){ theta_p.setAccepted(1); markovChain.addLink(theta_p);
+
+            std::cout << "Do I accept?" << std::endl; }
             else {  markovChain.addLink(markovChain.back());  }
             x++;
 

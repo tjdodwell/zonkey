@@ -52,6 +52,7 @@ public:
 		VectorXd old = u.getTheta();
 		(*this).setTheta(old);
 		(*this).setlogPhi(u.getlogPhi());
+    (*this).setAccepted(u.getAccept());
 		//VectorXd tmpQ = u.getQ();
 		//(*this).setQoI(tmpQ);
 	}
