@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <boost/numeric/odeint.hpp>
+#include <boost/math/interpolators/cubic_b_spline.hpp>
 
 #include "Impact_ode.hh"
 
@@ -132,32 +133,53 @@ namespace Zonkey {
         Eigen::VectorXd xi = u.getTheta();
 
         using namespace std;
-    using namespace boost::numeric::odeint;
+        using namespace boost::numeric::odeint;
 
 
-      //[ state_initialization
-      state_type x(2);
-      x[0] = xi(0); // start at x=1.0, p=0.0
-      x[1] = xi(1);
-      //]
+        //[ state_initialization
+        state_type x(2);
+        x[0] = xi(0); // start at x=1.0, p=0.0
+        x[1] = xi(1);
+        //]
 
-    //[ integrate_observ
-    vector<state_type> x_vec;
-    vector<double> times;
+        double t0 = 0.0;
+        double h = 0.1;
 
 
-    //[ define_const_stepper
-    runge_kutta4< state_type > stepper;
-    size_t steps = integrate_const( stepper , harmonic_oscillator , x , 0.0 , 10.0 , 0.1, push_back_state_and_time( x_vec , times ) );
+        //[ integration_class
+        harm_osc ho(xi);
 
-    /* output */
-    for( size_t i=0; i<=steps; i++ )
-    {
-        cout << times[i] << '\t' << x_vec[i][0] << '\t' << x_vec[i][1] << '\n';
-    }
-    //]
-    //]
+          //[ integrate_observ
+          vector<state_type> x_vec;
+          vector<double> times;
 
+
+          //[ define_const_stepper
+          runge_kutta4< state_type > stepper;
+          size_t steps = integrate_const( stepper , ho , x , t0 , 20.0 , h, push_back_state_and_time( x_vec , times ) );
+
+          std::vector<double> x_sol(steps);
+
+
+          /* output */
+          for( size_t i=0; i<=steps; i++ )
+          {
+              x_sol[i] = x_vec[i][0];
+              cout << times[i] << '\t' << x_vec[i][0] << '\t' << x_vec[i][1] << '\n';
+          }
+          //]
+          //]
+
+          boost::math::cubic_b_spline<double> spline(x_sol.begin(), x_sol.end(), t0, h);
+
+          // Compute logLikelihood
+          Eigen::VectorXd misMatch(numDataPoints);
+          for (int k = 0; k < numDataPoints; k++){
+            misMatch(k) = (spline(data_time[k]) - data_val(k)) * (spline(data_time[k]) - data_val(k));
+          }
+          double logLikelihood = -0.5 * misMatch.transpose() * ( invSigmad * misMatch );
+
+          std::cout << logLikelihood << std::endl;
 
       }
 
