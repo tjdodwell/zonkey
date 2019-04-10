@@ -34,14 +34,14 @@ int main()
   int burninSamples = 1000;
   int burningFactor = 10;
 
-  int Nsamples = 20000;
+  int Nsamples = 100000;
 
   Eigen::VectorXd randomWalk_parameters(1);
   randomWalk_parameters(0) = 0.1;
 
   Eigen::VectorXd PCN_parameters(2);
-  PCN_parameters(0) = 0.3;
-  PCN_parameters(1) = 0.2;
+  PCN_parameters(0) = 0.9;
+  PCN_parameters(1) = 0.1;
 
   const int STOCHASTIC_DIM = 5;
 
@@ -90,7 +90,7 @@ int main()
 
   std::cout << "Acceptance Ratio " << theChain.acceptRatio() << std::endl;
 
-  std::cout << "Effective Sample size / Samples = " << theChain.getMinESS() << " / " << theChain.size() << std::endl;
+  std::cout << theChain.getESS_All() << std::endl;
 
 
   return 0;

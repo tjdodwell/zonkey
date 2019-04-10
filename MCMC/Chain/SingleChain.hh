@@ -55,6 +55,8 @@ namespace Zonkey {
         return ESS;
       }
 
+      Eigen::VectorXd getESS_All(){ return this->EffectiveSampleSizes(); }
+
       double getMaxESS(){
         Eigen::VectorXd ESS = this->EffectiveSampleSizes();
         double max = ESS.maxCoeff();
