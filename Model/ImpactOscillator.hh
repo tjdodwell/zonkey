@@ -37,23 +37,33 @@ namespace Zonkey {
           mu(0) = 0.0; // initial displacement
           mu(1) = 0.1; // initial velocity
           mu(2) = 1.0; // stiffness
-          mu(3) = 100.0; // contact stiffness
-          mu(4) = 0.1; // Amplitude of osciallations of contact plate
-          mu(5) = 1.0; // Frequency of contact plate
+          mu(3) = 0.1; // Amplitude of osciallations of contact plate
+          mu(4) = 1.0; // Frequency of contact plateAmplitude of osciallations of contact plate
+
+
+          constraint_min.resize(STOCHASTIC_DIM);
+
+          constraint_min(0) = -10.0e9;
+          constraint_min(1) = -10.0e9;
+          constraint_min(2) =   0.0;
+          constraint_min(3) = -10.0e9;
+          constraint_min(4) = 0.0;
+
+          constraint_max.resize(STOCHASTIC_DIM);
+
+          constraint_max(0) = 10.0e9;
+          constraint_max(1) = 10.0e9;
+          constraint_max(2) = 10.0e9;
+          constraint_max(3) = 10.0e9;
+          constraint_max(4) = 10.0e9;
+
+
 
           // Diagonal MatrixXd
 
-          double sig = 1.0;
+          double sig = 0.1;
 
-          MatrixXd Sigma = MatrixXd::Zero(6,6);
-
-          Sigma(0,0) = 0.02;
-          Sigma(1,1) = 0.02;
-          Sigma(2,2) = 0.1;
-          Sigma(3,3) = 1.0;
-          Sigma(4,4) = 0.02;
-          Sigma(5,5) = 0.1;
-
+          MatrixXd Sigma = MatrixXd::Identity(STOCHASTIC_DIM,STOCHASTIC_DIM);
 
           Sigma *= sig;
 
@@ -66,7 +76,7 @@ namespace Zonkey {
 
           totalTime = 20.0;
 
-          double sigf = 0.0229;
+          sigf = 1.0;
 
           data_time.resize(numDataPoints);
           data_val.resize(numDataPoints);
@@ -96,16 +106,16 @@ namespace Zonkey {
 
           // data value
 
-          data_val(0) = 0.0419;
-          data_val(1) = -0.1127;
-          data_val(2) = -0.3168;
-          data_val(3) = 0.0383;
-          data_val(4) = -0.0244;
-          data_val(5) = -0.3644;
-          data_val(6) = 0.0182;
-          data_val(7) = 0.0338;
-          data_val(8) = -0.4053;
-          data_val(9) = -0.0163;
+          data_val(0) = 0.0986;
+          data_val(1) = 0.0451;
+          data_val(2) = -0.1013;
+          data_val(3) = 0.0179;
+          data_val(4) = 0.0842;
+          data_val(5) = -0.0849;
+          data_val(6) = -0.0137;
+          data_val(7) = 0.0958;
+          data_val(8) = -0.0660;
+          data_val(9) = -0.0408;
 
           MatrixXd Sigmad = MatrixXd::Identity(numDataPoints, numDataPoints);
 
@@ -113,8 +123,7 @@ namespace Zonkey {
 
           invSigmad = Sigmad.inverse();
 
-          data_val = data_val + invSigmad * gauss_noise;
-
+          data_val = data_val + Sigmad * gauss_noise;
 
       }
 
@@ -127,59 +136,83 @@ namespace Zonkey {
 
       }
 
-      void testRun(Link & u){
+      void apply(Link & u, int level = 0, bool plotSolution = false){
 
         // Multilevel Model for Impact Oscillator
         Eigen::VectorXd xi = u.getTheta();
 
-        using namespace std;
-        using namespace boost::numeric::odeint;
+        bool pass = testSample(xi);
 
 
-        //[ state_initialization
-        state_type x(2);
-        x[0] = xi(0); // start at x=1.0, p=0.0
-        x[1] = xi(1);
-        //]
+        double logLikelihood = -10e9;
 
-        double t0 = 0.0;
-        double h = 0.1;
+        if(pass){
+
+          using namespace std;
+          using namespace boost::numeric::odeint;
 
 
-        //[ integration_class
-        harm_osc ho(xi);
-
-          //[ integrate_observ
-          vector<state_type> x_vec;
-          vector<double> times;
-
-
-          //[ define_const_stepper
-          runge_kutta4< state_type > stepper;
-          size_t steps = integrate_const( stepper , ho , x , t0 , 20.0 , h, push_back_state_and_time( x_vec , times ) );
-
-          std::vector<double> x_sol(steps);
-
-
-          /* output */
-          for( size_t i=0; i<=steps; i++ )
-          {
-              x_sol[i] = x_vec[i][0];
-              cout << times[i] << '\t' << x_vec[i][0] << '\t' << x_vec[i][1] << '\n';
-          }
-          //]
+          //[ state_initialization
+          state_type x(2);
+          x[0] = xi(0);
+          x[1] = xi(1);
           //]
 
-          boost::math::cubic_b_spline<double> spline(x_sol.begin(), x_sol.end(), t0, h);
+          double t0 = 0.0;
+          double h = 0.1;
 
-          // Compute logLikelihood
-          Eigen::VectorXd misMatch(numDataPoints);
-          for (int k = 0; k < numDataPoints; k++){
-            misMatch(k) = (spline(data_time[k]) - data_val(k)) * (spline(data_time[k]) - data_val(k));
+
+          //[ integration_class
+          harm_osc ho(xi);
+
+            //[ integrate_observ
+            vector<state_type> x_vec;
+            vector<double> times;
+
+
+            //[ define_const_stepper
+            runge_kutta4< state_type > stepper;
+            size_t steps = integrate_const( stepper , ho , x , t0 , 20.0 , h, push_back_state_and_time( x_vec , times ) );
+
+            std::vector<double> x_sol(steps);
+
+
+            /* output */
+            for( size_t i=0; i<=steps; i++ )
+            {
+                x_sol[i] = x_vec[i][0];
+              //  cout << times[i] << '\t' << x_vec[i][0] << '\t' << x_vec[i][1] << '\n';
+            }
+            //]
+            //]
+
+            boost::math::cubic_b_spline<double> spline(x_sol.begin(), x_sol.end(), t0, h);
+
+
+            // Compute logLikelihood
+            Eigen::VectorXd misMatch(numDataPoints);
+
+            logLikelihood = 0.0;
+            for (int k = 0; k < numDataPoints; k++){
+              if(plotSolution){
+                  std::cout << spline(data_time[k]) << " / " << data_val(k) << std::endl;
+              }
+              logLikelihood -= (spline(data_time[k]) - data_val(k)) * (spline(data_time[k]) - data_val(k)) / (sigf * sigf);
+            }
+
+
+          //  logLikelihood = -0.5 * misMatch.transpose() * misMatch ;
+
           }
-          double logLikelihood = -0.5 * misMatch.transpose() * ( invSigmad * misMatch );
+          if(plotSolution){ std::cout << logLikelihood << std::endl;  }
 
-          std::cout << logLikelihood << std::endl;
+
+
+          // Save information about proposal
+          u.setlogPhi(logLikelihood);
+          u.setlogPi0(this->logPrior(u));
+
+          //std::cout << logLikelihood << std::endl;
 
       }
 
@@ -191,19 +224,42 @@ namespace Zonkey {
 
 
       Eigen::VectorXd samplePrior(int level = 0){
+
         std::random_device rd;
         std::normal_distribution<double> dis(0.0,1.0);
         std::mt19937 gen(rd());
         Eigen::VectorXd z(STOCHASTIC_DIM);
-        for (int i = 0; i < STOCHASTIC_DIM; i++){
-          z(i) = dis(gen);
+
+        bool goodStart = false;
+
+        while(goodStart == false){
+
+          for (int i = 0; i < STOCHASTIC_DIM; i++){
+            z(i) = dis(gen);
+          }
+
+          Eigen::VectorXd ans = C * z + mu;
+
+          goodStart = testSample(ans);
+
         }
+
         return C * z + mu; // Sample from prior - note Sigma = C' * C
 
-        std::cout << "I am sampling the prior = " << C * z + mu << std::endl;
+
       } // samplePrior
 
-      void apply(Link & u, int level = 0, bool plotSolution = false){
+      bool testSample(Eigen::VectorXd & xi){
+        bool test = true;
+        for (int i = 0; i < STOCHASTIC_DIM; i++){
+          if (xi(i) < constraint_min(i) || xi(i) > constraint_max(i)){
+            return false;
+          }
+        }
+        return test;
+      }
+
+    /*  void apply(Link & u, int level = 0, bool plotSolution = false){
 
         // Multilevel Model for Impact Oscillator
         Eigen::VectorXd xi = u.getTheta();
@@ -263,13 +319,8 @@ namespace Zonkey {
         u.setlogPhi(logLikelihood);
         u.setlogPi0(this->logPrior(u));
 
-      }
+      }*/
 
-      double inline forcing(double t, double x, double v, Eigen::VectorXd & xi){
-        // This model assumes linear spring and one-sided Hertz Contact
-        double offsetOfContactSurface = x - xi(4) * std::sin(xi(5) * t);
-        return - xi(2) * x;// - 100.0 * std::real(std::pow(offsetOfContactSurface,3./2.)) - v;
-      }
 
       Eigen::VectorXd grad(Link & u){
         Eigen::VectorXd xi = u.getTheta();
@@ -280,13 +331,15 @@ namespace Zonkey {
   private:
 
       MatrixXd invSigma, C, invSigmad;
-      Eigen::VectorXd mu, data_val;
+      Eigen::VectorXd mu, data_val, constraint_min, constraint_max;
       double totalTime;
       std::vector<int> numSteps;
 
       std::vector<double> data_time;
 
       int L, numDataPoints;
+
+      double sigf;
 
   };
 

@@ -40,10 +40,10 @@ int main()
   randomWalk_parameters(0) = 0.1;
 
   Eigen::VectorXd PCN_parameters(2);
-  PCN_parameters(0) = 0.2;
-  PCN_parameters(1) = 1.0;
+  PCN_parameters(0) = 0.3;
+  PCN_parameters(1) = 0.2;
 
-  const int STOCHASTIC_DIM = 6;
+  const int STOCHASTIC_DIM = 5;
 
   typedef Zonkey::MCMC::Link<STOCHASTIC_DIM,0> LINK;
 
@@ -60,30 +60,37 @@ int main()
 
   Zonkey::MCMC::MetropolisHastings<LINK,CHAIN,PROPOSAL,MODEL> myMCMC(F,myProposal,markovChain);
 
-  //myMCMC.burnin(burninSamples,burningFactor);
+  myMCMC.burnin(burninSamples,burningFactor);
 
-  //myMCMC.run(Nsamples);
+  myMCMC.run(Nsamples);
 
-  //auto theChain = myMCMC.getChain();
+  auto theChain = myMCMC.getChain();
 
-  Eigen::VectorXd mu(STOCHASTIC_DIM);
+/*  Eigen::VectorXd mu(STOCHASTIC_DIM);
 
   mu(0) = 0.0; // initial displacement
   mu(1) = 0.1; // initial velocity
   mu(2) = 1.0; // stiffness
-  mu(3) = 100.0; // contact stiffness
-  mu(4) = 0.1; // Amplitude of osciallations of contact plate
-  mu(5) = 1.0; // Frequency of contact plate
+  mu(3) = 0.1; // Amplitude of osciallations of contact plate
+  mu(4) = 1.0; // Frequency of contact plateAmplitude of osciallations of contact plate
 
-  LINK testLink(mu);
+  Eigen::VectorXd start = F.samplePrior();
 
-  F.testRun(testLink);
+  LINK testLink(start);
+
+  F.apply(testLink,0,true);
+
+  LINK proposal = myProposal.apply(testLink);
+
+  F.apply(proposal,0,true);
+
+  std::cout << myProposal.acceptReject(testLink,proposal,true) << std::endl;*/
 
   //F.apply(testLink,0,true);
 
-  //std::cout << "Acceptance Ratio " << theChain.acceptRatio() << std::endl;
+  std::cout << "Acceptance Ratio " << theChain.acceptRatio() << std::endl;
 
-  //std::cout << "Effective Sample size / Samples = " << theChain.getMinESS() << " / " << theChain.size() << std::endl;
+  std::cout << "Effective Sample size / Samples = " << theChain.getMinESS() << " / " << theChain.size() << std::endl;
 
 
   return 0;

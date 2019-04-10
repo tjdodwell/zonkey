@@ -24,7 +24,10 @@ namespace Zonkey {
       SingleChain(){ }
 
 
-      void addLink(Link& newLink){  theChain.push_back(newLink);  }
+      void addLink(Link& newLink, int accept = 0){
+        theChain.push_back(newLink);
+        theChain.back().setAccepted(accept);
+      }
 
       Link& back(){return theChain.back(); }
 
@@ -40,7 +43,7 @@ namespace Zonkey {
         int numParam = theChain[0].size(); // Number of Parameters
         Eigen::VectorXd ESS(numParam);
 
-        int numSamplesUsed = std::min(this->size(),10000);
+        int numSamplesUsed = std::min(this->size(),100000000);
 
         for (int j = 0; j < numParam; j++){
           std::vector<double> vals(numSamplesUsed);

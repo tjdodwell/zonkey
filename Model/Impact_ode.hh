@@ -16,10 +16,11 @@ class harm_osc {
 public:
     harm_osc( Eigen::VectorXd & xi_ ) : xi(xi_) { }
 
-    void operator() ( const state_type &x , state_type &dxdt , const double /* t */ )
+    void operator() ( const state_type &x , state_type &dxdt , double t )
     {
+
         dxdt[0] = x[1];
-        dxdt[1] = -xi(2) * x[0] - x[1];
+        dxdt[1] = -xi(2) * x[0] - x[1] + xi(3) * std::sin(xi(4) * t);
     }
 };
 //]

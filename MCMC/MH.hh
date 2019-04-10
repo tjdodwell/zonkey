@@ -34,8 +34,8 @@ namespace Zonkey {
           if(markovChain.size() < 1){ // If this is the first sample
             Eigen::VectorXd theta_fP = F.samplePrior();
             Link firstPoint(theta_fP);
-            markovChain.addLink(firstPoint);
-            F.apply(markovChain.back());
+            F.apply(firstPoint);
+            markovChain.addLink(firstPoint,1);
             numSamples -= 1;
           }
 
@@ -45,17 +45,19 @@ namespace Zonkey {
 
           for (int i = 0; i < numSamples; i++){
 
-            Link theta_p = proposal.apply(markovChain.back()); // Make a proposal
+            Link lastLink = markovChain.back();
+
+            Link theta_p = proposal.apply(lastLink); // Make a proposal
 
             F.apply(theta_p);  // Apply forward Model
 
             // Accept / Reject Step
-            bool accept = proposal.acceptReject(markovChain.back(),  theta_p);
+            bool accept = proposal.acceptReject(lastLink,  theta_p);
 
-            if(accept){ theta_p.setAccepted(1); markovChain.addLink(theta_p);
+            if(accept){ markovChain.addLink(theta_p,1);
 
-            std::cout << "Do I accept?" << std::endl; }
-            else {  markovChain.addLink(markovChain.back());  }
+            }
+            else {  markovChain.addLink(lastLink,0);  }
             x++;
 
             int num = 100 * x / numSamples;

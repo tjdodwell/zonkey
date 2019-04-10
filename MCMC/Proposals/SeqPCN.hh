@@ -35,7 +35,7 @@ namespace Zonkey {
           return prop; // Return Proposal from SeqRandomWalk
         }
 
-        bool acceptReject(LINK& u,  LINK& v){
+        bool acceptReject(LINK& u,  LINK& v, bool verb = false){
 
           bool accept = false;
 
@@ -49,6 +49,16 @@ namespace Zonkey {
 
           if (logalpha < logtestProbability){
             accept = true;
+          }
+
+          if(verb){
+
+            std::cout << "logalpha = " << logalpha << std::endl;
+            std::cout << "logtestProbability = " << logtestProbability << std::endl;
+            std::cout << "Do we accept ? = " << accept << std::endl;
+            std::cout << "proposal ll = " << v.getlogPhi() << std::endl;
+            std::cout << "existing ll = " << u.getlogPhi() << std::endl;
+
           }
 
           return accept;
