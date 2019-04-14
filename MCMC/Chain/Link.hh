@@ -36,7 +36,9 @@ public:
 	int getAccept(){	return accept;}
 	VectorXd getQ(){ 	return Q;}
 
-	double getlogPhi(bool isCoarse = false){ if(isCoarse){return logPhi_Coarse;} else {return logPhi;} }
+	double getlogPhi(bool isCoarse = false){
+    if(isCoarse){return logPhi_Coarse;} else {return logPhi;}
+  }
 
 	double getlogPi0(){ return logPi0; }
 
@@ -51,10 +53,10 @@ public:
 		// Operator Overrides class with u
 		VectorXd old = u.getTheta();
 		(*this).setTheta(old);
-		(*this).setlogPhi(u.getlogPhi());
-  //  (*this).setAccepted(u.getAccept());
-		//VectorXd tmpQ = u.getQ();
-		//(*this).setQoI(tmpQ);
+		(*this).setlogPhi(u.getlogPhi(false),false);
+    (*this).setlogPhi(u.getlogPhi(true),true)
+		 VectorXd tmpQ = u.getQ();
+		(*this).setQoI(tmpQ);
 	}
 
 	void setTheta(VectorXd & vals){
@@ -67,6 +69,7 @@ public:
 		assert(vals.size() == numQoI);
 		Q = vals;
 	}
+
 
 	void setAccepted(int val){accept = val;} // If accepted
 
@@ -87,6 +90,8 @@ private:
 	double logPhi, logPi0;
 
 	double logPhi_Coarse;
+
+
 
 	VectorXd theta;
 	VectorXd Q;

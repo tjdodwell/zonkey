@@ -1,38 +1,30 @@
-#ifndef ZONKEY_MCMC_SEQ_PCN_HH
-#define ZONKEY_MCMC_SEQ_PCN_HH
-
-#include "../Chain/Link.hh"
-
-
-#include <random>
-#include <cassert>
-#include <cmath>
-
+#ifndef ZONKEY_MCMC_DELAYED_ACCEPTANCE_HH
+#define ZONKEY_MCMC_DELAYED_ACCEPTANCE_HH
 
 namespace Zonkey {
   namespace MCMC {
 
-    template<typename LINK>
-    class SeqPCN{
+    template<typename Link, typename Chain, typename PROPOSAL, typename ForwardModel>
+    class SeqDA{
 
       public:
 
-        SeqPCN(Eigen::VectorXd & param_):param(param_){
-          assert(param.size() == 2 && "param input wrong length for SeqPCN, should be length 2"); //
+        SeqDA(PROPOSAL& myProposal_, ForwardModel& F_, int subChain_length_ = 10) :
+          subChain_length(subChain_length_),
+          myProposal(myProposal_),
+          F(F_){
+
+
         }
 
-        LINK apply(const LINK& currentState){
+        LINK apply(LINK& currentState){
           Eigen::VectorXd xi = currentState.getTheta();
-          Eigen::VectorXd xip(xi.size());
-          std::random_device rd;
-          std::normal_distribution<double> dis(0.0,1.0);
-          std::mt19937 gen(rd());
-          for (int i = 0; i < xi.size(); i++){
-            xip(i) = std::sqrt(1 - param(0) * param(0)) * xi(i) + param(0) * param(1) * dis(gen);
-          }
-          LINK prop;
-          prop.setTheta(xip);
-          return prop; // Return Proposal from SeqRandomWalk
+          CHAIN markovChain; // Setup a sub chain
+          Zonkey::MCMC::MetropolisHastings<LINK,CHAIN,PROPOSAL,ForwardModel> myMCMC(F,myProposal,markovChain);
+          myMCMC.setStart(xi,0);
+          myMCMC.run(subChain_length,0);
+          LINK prop = myMCMC.back()
+          return prop; // Return Proposal from SeqDA
         }
 
         bool acceptReject(LINK& u,  LINK& v, bool verb = false){
@@ -45,7 +37,7 @@ namespace Zonkey {
 
           double logalpha = std::log(dis(gen));
 
-          double logtestProbability = v.getlogPhi() - u.getlogPhi();
+          double logtestProbability = v.getlogPhi(false) + u.getlogPhi(true) - u.getlogPhi(false) - v.getlogPhi(true);
 
           if (logalpha < logtestProbability){
             accept = true;
@@ -72,12 +64,16 @@ namespace Zonkey {
 
         Eigen::VectorXd param; // Step size for random step
 
+        int subChain_length;
+
+        PROPOSAL& myProposal;
+        ForwardModel& F;
+
 
     };
 
 
-  }
-}
+
 
 
 #endif

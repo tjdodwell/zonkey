@@ -28,13 +28,19 @@ namespace Zonkey {
         if (moreSamples > 0){ run(moreSamples,"More burnin samples . . . "); }
       }
 
+      void inline setStart(Eigen::VectorXd & xi, int level = 0){
+        Link firstPoint(xi);
+        F.apply(firstPoint, level);
+        markovChain.addLink(firstPoint,1);
+      }
 
-      void inline run(int numSamples, string printout = "Computing Samples ..."){
+
+      void inline run(int numSamples, int level = 0, string printout = "Computing Samples ..."){
 
           if(markovChain.size() < 1){ // If this is the first sample
             Eigen::VectorXd theta_fP = F.samplePrior();
             Link firstPoint(theta_fP);
-            F.apply(firstPoint);
+            F.apply(firstPoint,level);
             markovChain.addLink(firstPoint,1);
             numSamples -= 1;
           }
@@ -49,7 +55,7 @@ namespace Zonkey {
 
             Link theta_p = proposal.apply(lastLink); // Make a proposal
 
-            F.apply(theta_p);  // Apply forward Model
+            F.apply(theta_p,level);  // Apply forward Model
 
             // Accept / Reject Step
             bool accept = proposal.acceptReject(lastLink,  theta_p);
