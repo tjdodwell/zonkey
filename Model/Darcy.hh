@@ -1,43 +1,24 @@
 
-/*
 
-
-const int dim=2;
-        typedef Dune::YaspGrid<dim> Grid;
-        typedef Grid::ctype DF;
-        Dune::FieldVector<DF,dim> L;
-        L[0] = ptree.get("grid.structured.LX",(double)1.0);
-        L[1] = ptree.get("grid.structured.LY",(double)1.0);
-        std::array<int,dim> N;
-        N[0] = ptree.get("grid.structured.NX",(int)10);
-        N[1] = ptree.get("grid.structured.NY",(int)10);
-        std::shared_ptr<Grid> gridp = std::shared_ptr<Grid>(new Grid(L,N));
-        gridp->globalRefine(refinement);
-        typedef Grid::LeafGridView GV;
-        GV gv=gridp->leafGridView();
-        if (degree==1) {
-          typedef Dune::PDELab::QkLocalFiniteElementMap<GV,DF,double,1> FEM;
-          FEM fem(gv);
-          driver(gv,fem,ptree);
-        }
-
-
-*/
 
 #include <iostream>
 #include <fstream>
 
 #include "dune_includes/problem.hh"
 #include "dune_includes/randomField/RandomField.hh"
+
+#include <Eigen/Dense>
+
 using namespace std;
+using namespace Eigen;
 
 
-template <typename GRID>
+template <typename Link, int STOCHASTIC_DIM, typename GRID>
 class Darcy{
 
   public:
 
-    Darcy(){
+    Darcy(GRID& grid_): grid(grid_){
 
 
       int nobs = 5;
@@ -45,11 +26,7 @@ class Darcy{
 
       int maxR = 169;
 
-      MatrixXd
-
       obsCoord.resize(Nobs,2);
-
-      VectorXd
 
       Fobs.resize(Nobs);
 
@@ -58,10 +35,9 @@ class Darcy{
       VectorXd coords(nobs);
 
       double dx = 1.0 / (nobs + 1);
-
-      coords(0) = dxcoords;
+      coords(0) = dx;
       for (int i = 1; i < nobs; i++){
-      	coords(i) = coords(i-1) + dxcoords;
+      	coords(i) = coords(i-1) + dx;
       }
 
       int kk = 0;
@@ -73,12 +49,12 @@ class Darcy{
       	}
       }
 
-      // == Read data in from file
+    /*  // == Read data in from file
       ifstream input("data.txt");
       thetaObs.resize(maxR);
       for (int i = 0; i < maxR; i++) {
         input >> thetaObs(i);
-      }
+      }*/
 
       // == Read in obs
 
@@ -120,24 +96,24 @@ class Darcy{
     void apply(Link & u, int level = 0, bool plotSolution = false){
 
       // Setting up Model
-
-      typedef GRID::LevelGridView GV;
+      typedef typename GRID::LevelGridView GV;
       GV gv = grid.levelGridView(level);
 
       // dimension and important types
       const int dim = GV::dimension;
       typedef double RF;                   // type for computations
+      typedef typename GRID::ctype DF;
 
 
       typedef Dune::PDELab::QkLocalFiniteElementMap<GV,DF,double,1> FEM;
         FEM fem(gv);
 
 
-
-
-
       typedef GenericEllipticProblem<GV,RF,RandomField> PROBLEM;
         PROBLEM problem(gv,field);
+
+      typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<PROBLEM> BCType;
+        BCType bctype(gv,problem);
 
       // Make grid function space
       typedef Dune::PDELab::ConformingDirichletConstraints CON;
@@ -146,53 +122,138 @@ class Darcy{
       GFS gfs(gv,fem);
       gfs.name("p");
 
+      typedef Dune::PDELab::Backend::Vector<GFS,RF> V;
+        V x(gfs,0.0);
+
+      // Extract domain boundary constraints from problem definition, apply trace to solution vector
+      typedef Dune::PDELab::ConvectionDiffusionDirichletExtensionAdapter<PROBLEM> G;
+        G g(gv,problem);
+      Dune::PDELab::interpolate(g,gfs,x);
+
       // Assemble constraints
       typedef typename GFS::template
         ConstraintsContainer<RF>::Type CC;
       CC cc;
-      Dune::PDELab::constraints(b,gfs,cc); // assemble constraints
-      std::cout << "constrained dofs=" << cc.size() << " of "
-                << gfs.globalSize() << std::endl;
+      Dune::PDELab::constraints(bctype,gfs,cc); // assemble constraints
 
-      // A coefficient vector
-      using Z = Dune::PDELab::Backend::Vector<GFS,RF>;
-      Z z(gfs); // initial value
-
-      // Make a grid function out of it
-      typedef Dune::PDELab::DiscreteGridFunction<GFS,Z> ZDGF;
-      ZDGF zdgf(gfs,z);
-
-      // Fill the coefficient vector
-      Dune::PDELab::interpolate(g,gfs,z);
-
-      // Make a local operator
-      typedef NonlinearPoissonFEM<Problem<RF>,FEM> LOP;
+      // LocalOperator for given problem
+      typedef Dune::PDELab::ConvectionDiffusionFEM<PROBLEM,FEM> LOP;
       LOP lop(problem);
 
       // Make a global operator
       typedef Dune::PDELab::ISTL::BCRSMatrixBackend<> MBE;
-      int degree = ptree.get("fem.degree",(int)1);
-      MBE mbe((int)pow(1+2*degree,dim));
-      typedef Dune::PDELab::GridOperator<
-        GFS,GFS,  /* ansatz and test space */
-        LOP,      /* local operator */
-        MBE,      /* matrix backend */
-        RF,RF,RF, /* domain, range, jacobian field type*/
-        CC,CC     /* constraints for ansatz and test space */
-        > GO;
+      MBE mbe(9);
+
+      typedef Dune::PDELab::GridOperator<GFS,GFS,LOP,MBE,RF,RF,RF,CC,CC> GO;
       GO go(gfs,cc,gfs,cc,lop,mbe);
 
       // Select a linear solver backend
       typedef Dune::PDELab::ISTLBackend_SEQ_CG_AMG_SSOR<GO> LS;
       LS ls(100,2);
 
+      // Assemble and solve linear problem
+      typedef Dune::PDELab::StationaryLinearProblemSolver<GO,LS,V> SLP;
+      SLP slp(go,ls,x,1e-10);
+      slp.apply(); // here all the work is done!
+
+
+      // Need to loop over elements
+
+      std::vector<int> elem(Nobs);
+
+      std::vector<Dune::FieldVector<double,2>> localCoords(Nobs);
+
+
+
+
+      for (int i = 0; i < Nobs; i++){
+          int id_min = 0;
+          double dmin = 10.0;
+          for (const auto& eit : elements(gv)){
+                int id = gv.indexSet().index(eit);
+                auto point = eit.geometry().center();
+                double d = std::sqrt(std::pow(obsCoord(i,0)-point[0],2)+std::pow(obsCoord(i,1)-point[1],2));
+                if (d < dmin){
+                  d = dmin; id_min = id;
+                  Dune::FieldVector<double,2> obs(0.0);
+                  obs[0] = obsCoord(i,0); obs[1] = obsCoord(i,1);
+                  localCoords[i] = eit.geometry.local(obs);
+                }
+          }
+          elem[i] = id_min;
+        }
+
+        // make local function space
+        typedef Dune::PDELab::LocalFunctionSpace<GFS> CLFS;
+          CLFS lfsu(gfs);
+        typedef Dune::PDELab::LFSIndexCache<CLFS> CLFSCache;
+          CLFSCache clfsCache(lfsu);
+        std::vector<double> u(lfsu.maxSize());
+
+        typedef typename X::template ConstLocalView<CLFSCache> XView;
+        XView xView(x);
+
+        typedef typename CLFS::Traits::FiniteElementType::Traits::LocalBasisType::Traits::JacobianType JacobianType;
+
+
+
+              for (const auto& eg : elements(gv)){
+
+                // bind solution x to local element
+                lfsu.bind(eg);
+                clfsCache.update();
+                xView.bind(clfsCache);
+                xView.read(u);
+
+
+
+                // select quadrature rule
+                auto geo = eg.geometry();
+                const Dune::QuadratureRule<double,dim>& rule = Dune::QuadratureRules<double,dim>::rule(geo.type(),1);
+
+                // loop over quadrature points
+                for (const auto& ip : rule)
+                {
+                  // Evaluate Jacobian
+                    std::vector<JacobianType> js(lfsu.size());
+                    lfsu.finiteElement().localBasis().evaluateJacobian(ip.position(),js);
+
+                    // Transform gradient to real element
+                    auto jac = geo.jacobianInverseTransposed(ip.position());
+                    std::vector<Dune::FieldVector<double,dim> > gradphi(lfsu.size());
+
+                    for (int i=0; i < lfsu.size(); i++){
+                        gradphi[i] = 0.0;
+                        jac.umv(js[i][0],gradphi[i]);
+                    }
+
+                    Dune::FieldMatrix<double,dim,3> G(0.0);
+
+                    for (int i = 0; i < lfsu.size(); i++){
+                      for (int j = 0; j < dim; j++){
+                        G[j][i] = gradphi[i][j];
+                      }
+                    }
+                    std::vector<double> gradp(dim), flux(dim);
+
+                    G.mv(u,gradp); // compute pressure gradient  grad(p) = gradphi * p
+                    Kij.mv(gradp,flux); // Compute flux = - Perm * G
+
+                    for (int d=0; d < dim; d++){
+                        flux_all[is.index(eg)][d] = flux[d];
+                    }
+
+                } // end For each integration point
+
+              } // end For each element
 
 
 
 
 
-      u.setlogPhi(logLikelihood);
 
+
+      //u.setlogPhi(logLikelihood);
 
 
 
@@ -202,15 +263,10 @@ class Darcy{
   private:
 
     Eigen::VectorXd thetaObs, Fobs;
+    Eigen::MatrixXd obsCoord;
 
+    GRID& grid;
 
     RandomField field;
 
-
-
-
-
-
-
-
-}
+};

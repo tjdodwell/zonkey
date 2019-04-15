@@ -1,6 +1,7 @@
 /*
  * Defining a Darcy problem with alternating layers of permeability and a high contrast
  */
+
 template<typename GV, typename RF, typename RandomField>
 class GenericEllipticProblem
 {
@@ -10,9 +11,7 @@ public:
   typedef Dune::PDELab::ConvectionDiffusionParameterTraits<GV,RF> Traits;
 
   GenericEllipticProblem(GV& gv_, RandomField& field_)
-  : layers(configuration.get<int>("layers")),
-    contrast(configuration.get<double>("contrast")),
-    gv(gv_),
+  : gv(gv_),
     field(field_){
 
 
@@ -165,8 +164,6 @@ public:
 
 private:
   GV& gv;
-  int layers;
-  double contrast;
   RandomField& field;
 
 };
