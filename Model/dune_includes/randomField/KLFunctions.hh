@@ -52,13 +52,50 @@ void bubbleSort(X& index, Y& lam)
     }
 }
 
+void inline construct2DeigenValues(std::vector<double>& lam1D, std::vector<double>& lambda, std::vector<std::vector<int>>& new_index){
+
+    const int dim = 2;
+
+    const int N = lam1D.size(); // Number of 1D eigenvalues
+
+
+
+    std::vector<std::vector<int>> index(dim);
+
+    for (int i = 0; i < dim; i++){
+      index[i].resize(std::pow(N,dim));
+      new_index[i].resize(std::pow(N,dim));
+    }
+
+    lambda.resize(std::pow(N,dim));
+    std::vector<int> ind(std::pow(N,dim));
+
+    int counter = 0;
+    for (int i = 0; i < N; i++){
+      for (int j = 0; j < N; j++){
+            lambda[counter] = lam1D[i] * lam1D[j];
+            ind[counter] = counter;
+            index[0][counter] = i;  index[1][counter] = j;
+            counter += 1;
+        }
+    }
+
+    bubbleSort(ind,lambda);
+
+    for (int i = 0; i < lambda.size(); i++){
+        new_index[0][i] = index[0][ind[i]];
+        new_index[1][i] = index[1][ind[i]];
+    }
+
+}
+
 void inline construct3DeigenValues(std::vector<double>& lam1D, std::vector<double>& lambda, std::vector<std::vector<int>>& new_index){
 
     const int dim = 3;
 
     const int N = lam1D.size(); // Number of 1D eigenvalues
 
-    
+
 
     std::vector<std::vector<int>> index(dim);
 

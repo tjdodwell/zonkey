@@ -12,6 +12,9 @@
 using namespace std;
 using namespace Eigen;
 
+namespace Zonkey {
+  namespace Models {
+
 
 template <typename Link, int STOCHASTIC_DIM, typename GRID>
 class Darcy{
@@ -20,11 +23,24 @@ class Darcy{
 
     Darcy(GRID& grid_): grid(grid_){
 
+      // == Parameters from the Section 4. Dodwell et al. 2015
+
+      sigf = 0.031622776601684;
+
+      // == Setup Random Field
+
+      double L = 1.0;
+      double sigKl = 1.0;
+      double correlation_length = 0.5;
+      int maxR = 169;
+
+      field.setup(L,sigKl,correlation_length,maxR);
+
 
       int nobs = 5;
-      int Nobs = nobs * nobs;
+      Nobs = nobs * nobs;
 
-      int maxR = 169;
+
 
       obsCoord.resize(Nobs,2);
 
@@ -93,7 +109,32 @@ class Darcy{
     }
 
 
-    void apply(Link & u, int level = 0, bool plotSolution = false){
+    Eigen::VectorXd samplePrior(int level = 0){
+      std::random_device rd;
+      std::normal_distribution<double> dis(0.0,1.0);
+      std::mt19937 gen(rd());
+      Eigen::VectorXd z(STOCHASTIC_DIM);
+      for (int i = 0; i < STOCHASTIC_DIM; i++){
+        z(i) = dis(gen);
+      }
+      return z; // Sample from prior - note Sigma = C' * C
+    } // samplePrior
+
+
+    void apply(Link& u, int level = 0, bool plotSolution = false){
+
+      // Unwrap Xi
+
+      Eigen::VectorXd xi = u.getTheta();
+
+      std::vector<double> xi_vec(xi.size());
+
+      for (int i = 0; i < xi.size(); i++){
+        xi_vec[i] = xi(i);
+      }
+
+      field.setXi(xi_vec);
+
 
       // Setting up Model
       typedef typename GRID::LevelGridView GV;
@@ -109,7 +150,7 @@ class Darcy{
         FEM fem(gv);
 
 
-      typedef GenericEllipticProblem<GV,RF,RandomField> PROBLEM;
+      typedef GenericEllipticProblem<GV,RF,RandomField<2> > PROBLEM;
         PROBLEM problem(gv,field);
 
       typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<PROBLEM> BCType;
@@ -157,103 +198,53 @@ class Darcy{
       slp.apply(); // here all the work is done!
 
 
-      // Need to loop over elements
+      //auto evalX = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(fem, Dune::TypeTree::hybridTreePath(), x);
 
-      std::vector<int> elem(Nobs);
+      typedef Dune::PDELab::DiscreteGridFunction<GFS,V> DGF;
+        DGF xdgf(gfs,x);
 
-      std::vector<Dune::FieldVector<double,2>> localCoords(Nobs);
+      Eigen::VectorXd F(Nobs);
 
+      for (int i = 0; i < Nobs; i++){ // For each observation
 
+        Dune::FieldVector<double,2> point(0.0);
+        point[0] = obsCoord(i,0);
+        point[1] = obsCoord(i,1);
 
+        Dune::PDELab::GridFunctionProbe<DGF> probe(xdgf,point);
 
-      for (int i = 0; i < Nobs; i++){
-          int id_min = 0;
-          double dmin = 10.0;
-          for (const auto& eit : elements(gv)){
-                int id = gv.indexSet().index(eit);
-                auto point = eit.geometry().center();
-                double d = std::sqrt(std::pow(obsCoord(i,0)-point[0],2)+std::pow(obsCoord(i,1)-point[1],2));
-                if (d < dmin){
-                  d = dmin; id_min = id;
-                  Dune::FieldVector<double,2> obs(0.0);
-                  obs[0] = obsCoord(i,0); obs[1] = obsCoord(i,1);
-                  localCoords[i] = eit.geometry.local(obs);
-                }
-          }
-          elem[i] = id_min;
-        }
+        Dune::FieldVector<double,1> val(0);
 
-        // make local function space
-        typedef Dune::PDELab::LocalFunctionSpace<GFS> CLFS;
-          CLFS lfsu(gfs);
-        typedef Dune::PDELab::LFSIndexCache<CLFS> CLFSCache;
-          CLFSCache clfsCache(lfsu);
-        std::vector<double> u(lfsu.maxSize());
+        probe.eval(val);
 
-        typedef typename X::template ConstLocalView<CLFSCache> XView;
-        XView xView(x);
+        F(i) = val[0];
 
-        typedef typename CLFS::Traits::FiniteElementType::Traits::LocalBasisType::Traits::JacobianType JacobianType;
+      }
 
 
 
-              for (const auto& eg : elements(gv)){
+      // Compute logLikelihood
+      Eigen::VectorXd misMatch(Nobs);
 
-                // bind solution x to local element
-                lfsu.bind(eg);
-                clfsCache.update();
-                xView.bind(clfsCache);
-                xView.read(u);
+      double logLikelihood = 0.0;
+      for (int k = 0; k < Nobs; k++){
+        logLikelihood -= (F(k) - Fobs(k)) * (F(k) - Fobs(k))  / (sigf * sigf);
+      }
 
-
-
-                // select quadrature rule
-                auto geo = eg.geometry();
-                const Dune::QuadratureRule<double,dim>& rule = Dune::QuadratureRules<double,dim>::rule(geo.type(),1);
-
-                // loop over quadrature points
-                for (const auto& ip : rule)
-                {
-                  // Evaluate Jacobian
-                    std::vector<JacobianType> js(lfsu.size());
-                    lfsu.finiteElement().localBasis().evaluateJacobian(ip.position(),js);
-
-                    // Transform gradient to real element
-                    auto jac = geo.jacobianInverseTransposed(ip.position());
-                    std::vector<Dune::FieldVector<double,dim> > gradphi(lfsu.size());
-
-                    for (int i=0; i < lfsu.size(); i++){
-                        gradphi[i] = 0.0;
-                        jac.umv(js[i][0],gradphi[i]);
-                    }
-
-                    Dune::FieldMatrix<double,dim,3> G(0.0);
-
-                    for (int i = 0; i < lfsu.size(); i++){
-                      for (int j = 0; j < dim; j++){
-                        G[j][i] = gradphi[i][j];
-                      }
-                    }
-                    std::vector<double> gradp(dim), flux(dim);
-
-                    G.mv(u,gradp); // compute pressure gradient  grad(p) = gradphi * p
-                    Kij.mv(gradp,flux); // Compute flux = - Perm * G
-
-                    for (int d=0; d < dim; d++){
-                        flux_all[is.index(eg)][d] = flux[d];
-                    }
-
-                } // end For each integration point
-
-              } // end For each element
+      u.setlogPhi(logLikelihood);
 
 
+      if(plotSolution){
 
+        std::cout << "logDensity = " << logLikelihood << std::endl;
 
-
-
-
-      //u.setlogPhi(logLikelihood);
+        // Write solution to VTK
+          Dune::VTKWriter<GV> vtkwriter(gfs.gridView());
+          typedef Dune::PDELab::VTKGridFunctionAdapter<DGF> ADAPT;
+          auto adapt = std::make_shared<ADAPT>(xdgf,"solution");
+          vtkwriter.addVertexData(adapt);
+          vtkwriter.write("solution");
+      }
 
 
 
@@ -265,8 +256,15 @@ class Darcy{
     Eigen::VectorXd thetaObs, Fobs;
     Eigen::MatrixXd obsCoord;
 
+    int Nobs;
+
+    double sigf;
+
     GRID& grid;
 
-    RandomField field;
+    RandomField<2> field;
 
 };
+
+}
+}

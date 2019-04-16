@@ -3,6 +3,7 @@
 
 #include "KLFunctions.hh"
 
+template<int DIM>
 class RandomField{
 
 public:
@@ -13,41 +14,36 @@ public:
 
     }
 
-    template<typename GridView>
-    void setup(GridView& gv){
+    void setup(double L_ = 1.0, double sigKl_ = 1.0, double correlation_length_ = 0.7, int S_Dim = 100){
 
-
-
-      // Inputs - later to be allowed as input arguments
-      L = 1.0;
-      sigKl = 1.0;
-      correlation_length = 0.7;
-      Stochastic_Dim = 100;
-
-
+      L = L_;
+      sigKl = sigKl_;
+      correlation_length = correlation_length_;
+      Stochastic_Dim = S_Dim;
 
       // Computed Quantities
       xi.resize(Stochastic_Dim);
       lambda.resize(Stochastic_Dim);
 
-      oneD_Stochastic_dim = std::ceil(std::pow(Stochastic_Dim,1./3.));
+      oneD_Stochastic_dim = std::ceil(std::pow(Stochastic_Dim,(double) 1./DIM));
 
       std::cout << oneD_Stochastic_dim << std::endl;
 
       freq.resize(oneD_Stochastic_dim); lam1D.resize(oneD_Stochastic_dim);
 
-
       rootFinder(oneD_Stochastic_dim, correlation_length / L, freq);
-
-
 
       evaluate1DeigenValues(correlation_length / L, lam1D, freq);
 
 
-      index.resize(3);
+      index.resize(DIM);
 
-
-      construct3DeigenValues(lam1D,lambda,index);
+      if (DIM == 2){
+        construct2DeigenValues(lam1D,lambda,index);
+      }
+      else{
+        construct3DeigenValues(lam1D,lambda,index);
+      }
 
 
 
@@ -95,12 +91,12 @@ public:
       return phi;
     }
 
-    double inline getPerm(const Dune::FieldVector<double,3> & x){
+    double inline getPerm(const Dune::FieldVector<double,DIM> & x){
       // Compute Random Field at a point
         double perm = 0.0;
         for (int j = 0; j < Stochastic_Dim; j++){
             double contribution2perm = sigKl * std::sqrt(lambda[j]);
-            for (int i = 0; i < 3; i++){
+            for (int i = 0; i < DIM; i++){
               contribution2perm *= evalPhi(x[i],index[i][j]);
             }
             perm += contribution2perm;

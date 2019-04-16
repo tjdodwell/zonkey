@@ -54,7 +54,7 @@ public:
 		VectorXd old = u.getTheta();
 		(*this).setTheta(old);
 		(*this).setlogPhi(u.getlogPhi(false),false);
-    (*this).setlogPhi(u.getlogPhi(true),true)
+    (*this).setlogPhi(u.getlogPhi(true),true);
 		 VectorXd tmpQ = u.getQ();
 		(*this).setQoI(tmpQ);
 	}

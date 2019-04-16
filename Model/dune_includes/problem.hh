@@ -44,11 +44,11 @@ public:
     I[0][1] = 0;
     I[1][0] = 0;
     I[1][1] = coeff;
-    I[0][2] = 0;
+    /*I[0][2] = 0;
     I[2][0] = 0;
     I[2][2] = coeff;
     I[1][2] = 0;
-    I[2][1] = 0;
+    I[2][1] = 0;*/
 
     return I;
   }
@@ -79,20 +79,6 @@ public:
 
     typename Traits::DomainType xglobal = e.geometry().global(x);
 
-      /*double d = 0.0;
-
-      double lambda = 0.1;
-
-      Dune::FieldVector<double,3> source(0.5);
-
-      for (int i = 0; i < 3; i++){
-        d += (xglobal[i] - source[i]) * (xglobal[i] - source[i]);
-      }
-
-      d = std::sqrt(d);
-
-      return 100.0 * exp(-(d*d)/lambda);*/
-
       return 0.0;
 
   }
@@ -101,16 +87,6 @@ public:
   bctype (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x) const
   {
     typename Traits::DomainType xglobal = is.geometry().global(x);
-    /*if (!(xglobal[0]<1E-10 || xglobal[0]>1.0-1E-10))
-      return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Neumann;
-    else
-      return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;*/
-    /*if (!((xglobal[1]<0.5 && xglobal[0]>1.0-1E-10) || (xglobal[1]>0.50 && xglobal[0]<1E-10)))
-      return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Neumann;
-    else
-      return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;*/
-    //if (//(xglobal[1] < 1E-10 && xglobal[0] > 0.75) || (xglobal[1] > 1.0-1E-10 && xglobal[0] < 0.25) ||
-        //xglobal[0] < 1E-10 || xglobal[0] > 1.0-1E-10)
 
     if(xglobal[0] < 1.0e-6 || xglobal[0] > 1.0 - 1e-6){
       return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;
