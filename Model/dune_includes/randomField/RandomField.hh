@@ -95,7 +95,7 @@ public:
       // Compute Random Field at a point
         double perm = 0.0;
         for (int j = 0; j < Stochastic_Dim; j++){
-            double contribution2perm = sigKl * std::sqrt(lambda[j]);
+            double contribution2perm = sigKl * std::sqrt(lambda[j])*xi[j];
             for (int i = 0; i < DIM; i++){
               contribution2perm *= evalPhi(x[i],index[i][j]);
             }
