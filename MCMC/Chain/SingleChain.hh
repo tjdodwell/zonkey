@@ -40,10 +40,29 @@ namespace Zonkey {
       int inline size(){ return theChain.size(); }
 
       Eigen::VectorXd EffectiveSampleSizes(){
+
+        int numSamplesUsed = std::min(this->size(),10000000);
+
+        if(theChain[0].getNumQoI() > 0){
+
+          Eigen::VectorXd ESS(theChain[0].getNumQoI());
+          for (int j = 0; j < theChain[0].getNumQoI(); j++){
+            std::vector<double> vals(numSamplesUsed);
+            for (int i = this->size() - numSamplesUsed; i < this->size(); i++){
+
+              auto tmp = theChain[i].getQ();
+              vals[i] = tmp[j];
+            }
+            ESS(j) = getESS(vals);
+          }
+
+          return ESS;
+
+        }
+        else{
+
         int numParam = theChain[0].size(); // Number of Parameters
         Eigen::VectorXd ESS(numParam);
-
-        int numSamplesUsed = std::min(this->size(),100000000);
 
         for (int j = 0; j < numParam; j++){
           std::vector<double> vals(numSamplesUsed);
@@ -52,7 +71,11 @@ namespace Zonkey {
           }
           ESS(j) = getESS(vals);
         }
+
         return ESS;
+
+        }
+
       }
 
       Eigen::VectorXd getESS_All(){ return this->EffectiveSampleSizes(); }

@@ -5,7 +5,9 @@
 #include <fstream>
 
 #include "dune_includes/problem.hh"
+#include "dune_includes/problemQoI.hh"
 #include "dune_includes/randomField/RandomField.hh"
+#include "dune_includes/QoI.hh"
 
 #include <Eigen/Dense>
 
@@ -153,8 +155,14 @@ class Darcy{
       typedef GenericEllipticProblem<GV,RF,RandomField<2> > PROBLEM;
         PROBLEM problem(gv,field);
 
+      typedef GenericEllipticProblemQoI<GV,RF,RandomField<2>> PROB_QOI;
+        PROB_QOI qp(gv,field);
+
       typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<PROBLEM> BCType;
         BCType bctype(gv,problem);
+
+        typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<PROB_QOI> BCType_qoi;
+          BCType_qoi bctype_qoi(gv,qp);
 
       // Make grid function space
       typedef Dune::PDELab::ConformingDirichletConstraints CON;
@@ -177,6 +185,9 @@ class Darcy{
       CC cc;
       Dune::PDELab::constraints(bctype,gfs,cc); // assemble constraints
 
+      CC cc_qoi;
+      Dune::PDELab::constraints(bctype_qoi,gfs,cc_qoi); // assemble constraints
+
       // LocalOperator for given problem
       typedef Dune::PDELab::ConvectionDiffusionFEM<PROBLEM,FEM> LOP;
       LOP lop(problem);
@@ -196,9 +207,6 @@ class Darcy{
       typedef Dune::PDELab::StationaryLinearProblemSolver<GO,LS,V> SLP;
       SLP slp(go,ls,x,1e-10,1e-99,0);
       slp.apply(); // here all the work is done!
-
-
-      //auto evalX = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(fem, Dune::TypeTree::hybridTreePath(), x);
 
       typedef Dune::PDELab::DiscreteGridFunction<GFS,V> DGF;
         DGF xdgf(gfs,x);
@@ -221,7 +229,29 @@ class Darcy{
 
       }
 
+      typedef Dune::PDELab::QoI<PROBLEM,FEM> QOI;
+        QOI qoi_lop(problem);
 
+      typedef Dune::PDELab::GridOperator<GFS,GFS,QOI,MBE,RF,RF,RF,CC,CC> QGO;
+        QGO qgo(gfs,cc_qoi,gfs,cc_qoi,qoi_lop,mbe);
+
+
+      using Dune::PDELab::Backend::native;
+
+      typedef Dune::PDELab::Backend::Vector<GFS,RF> V;
+        V q(gfs,0.0);
+
+      qgo.residual(x,q);
+
+      Eigen::VectorXd Q(1);
+      Q(0) = 0.0;
+      for (int i = 0; i < native(q).size(); i++){
+        Q(0) += native(q)[i];
+      }
+
+      std::cout << " " << std::endl;
+      std::cout << Q << std::endl;
+      u.setQoI(Q);
 
       // Compute logLikelihood
       Eigen::VectorXd misMatch(Nobs);

@@ -36,6 +36,8 @@ public:
 	int getAccept(){	return accept;}
 	VectorXd getQ(){ 	return Q;}
 
+  int getNumQoI(){ return numQoI; }
+
 	double getlogPhi(bool isCoarse = false){
     if(isCoarse){return logPhi_Coarse;} else {return logPhi;}
   }
@@ -55,7 +57,7 @@ public:
 		(*this).setTheta(old);
 		(*this).setlogPhi(u.getlogPhi(false),false);
     (*this).setlogPhi(u.getlogPhi(true),true);
-		 VectorXd tmpQ = u.getQ();
+		VectorXd tmpQ = u.getQ();
 		(*this).setQoI(tmpQ);
 	}
 
