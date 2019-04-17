@@ -46,7 +46,7 @@ namespace Zonkey {
         return C * z + mu; // Sample from prior - note Sigma = C' * C
       } // samplePrior
 
-      void apply(Link & u){
+      void apply(Link & u, int level = 0){
         Eigen::VectorXd xi = u.getTheta();
         double ld = pow((a - xi[0]),2) + b * pow(xi[1] - xi[0] * xi[0],2);
         u.setlogPhi(-ld);

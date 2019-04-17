@@ -190,11 +190,11 @@ class Darcy{
 
       // Select a linear solver backend
       typedef Dune::PDELab::ISTLBackend_SEQ_CG_AMG_SSOR<GO> LS;
-      LS ls(100,2);
+      LS ls(100,0);
 
       // Assemble and solve linear problem
       typedef Dune::PDELab::StationaryLinearProblemSolver<GO,LS,V> SLP;
-      SLP slp(go,ls,x,1e-10);
+      SLP slp(go,ls,x,1e-10,1e-99,0);
       slp.apply(); // here all the work is done!
 
 
@@ -235,9 +235,7 @@ class Darcy{
 
 
       if(plotSolution){
-
         std::cout << "logDensity = " << logLikelihood << std::endl;
-
         // Write solution to VTK
           Dune::VTKWriter<GV> vtkwriter(gfs.gridView());
           typedef Dune::PDELab::VTKGridFunctionAdapter<DGF> ADAPT;
