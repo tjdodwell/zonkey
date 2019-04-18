@@ -17,7 +17,9 @@ namespace Zonkey {
 
       public:
 
-        SeqPCN(Eigen::VectorXd & param_):param(param_){
+        SeqPCN(Eigen::VectorXd & param_, bool optimize_scaling_ = true):
+          param(param_),
+          optimize_scaling(optimize_scaling_){
           assert(param.size() == 2 && "param input wrong length for SeqPCN, should be length 2"); //
 
           gamma_scaling = -0.5;
@@ -60,24 +62,22 @@ namespace Zonkey {
 
           if (logUniform < logalpha){
             accept = true;
-
-            std::cout << "We ACCEPT! " << std::endl;
           }
 
           // Optimal Scaling
 
-          counter += 1;
+          if (optimize_scaling){
+            counter += 1;
 
-          double alpha = std::min(std::exp(logalpha),1.0);
+            double alpha = std::min(std::exp(logalpha),1.0);
 
-          double gamma = std::pow((double) counter, gamma_scaling);
+            double gamma = std::pow((double) counter, gamma_scaling);
 
-          double log_sig_new = std::log(sig) + gamma * (alpha - optimal_alpha);
+            log_sig_new = std::log(sig) + gamma * (alpha - optimal_alpha);
 
-          sig = std::exp(log_sig_new);
-
-          std::cout << alpha << std::endl;
-
+            sig = std::exp(log_sig_new);
+            
+          }
 
           if(verb){
 
@@ -92,7 +92,7 @@ namespace Zonkey {
           return accept;
         }
 
-        double getScaling(){return sig;}
+        double getScaling(){ return sig;}
 
         void updateParameters(Eigen::VectorXd & newParam){ param = newParam; }
 
@@ -107,6 +107,8 @@ namespace Zonkey {
         int counter;
 
         double gamma_scaling;
+
+        bool optimize_scaling;
 
 
     };

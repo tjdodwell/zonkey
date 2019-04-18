@@ -1,10 +1,12 @@
 #ifndef ZONKEY_MCMC_DELAYED_ACCEPTANCE_HH
 #define ZONKEY_MCMC_DELAYED_ACCEPTANCE_HH
 
+#include "/Users/td336/zonkey/MCMC/MH.hh"
+
 namespace Zonkey {
   namespace MCMC {
 
-    template<typename Link, typename Chain, typename PROPOSAL, typename ForwardModel>
+    template<typename LINK, typename CHAIN, typename PROPOSAL, typename ForwardModel>
     class SeqDA{
 
       public:
@@ -20,10 +22,16 @@ namespace Zonkey {
         LINK apply(LINK& currentState){
           Eigen::VectorXd xi = currentState.getTheta();
           CHAIN markovChain; // Setup a sub chain
-          Zonkey::MCMC::MetropolisHastings<LINK,CHAIN,PROPOSAL,ForwardModel> myMCMC(F,myProposal,markovChain);
+          MetropolisHastings<LINK,CHAIN,PROPOSAL,ForwardModel> myMCMC(F,myProposal,markovChain);
           myMCMC.setStart(xi,0);
-          myMCMC.run(subChain_length,0);
-          LINK prop = myMCMC.back()
+          myMCMC.run(1,0,"",false);
+          auto theChain = myMCMC.getChain();
+          logCoarse = theChain[0].getlogPhi();
+          myMCMC.run(subChain_length-1,0,"",false);
+
+          auto mc = myMCMC.getChain();
+          auto prop = mc.back();
+          logCoarseProp = prop.getlogPhi();
           return prop; // Return Proposal from SeqDA
         }
 
@@ -37,7 +45,7 @@ namespace Zonkey {
 
           double logalpha = std::log(dis(gen));
 
-          double logtestProbability = v.getlogPhi(false) + u.getlogPhi(true) - u.getlogPhi(false) - v.getlogPhi(true);
+          double logtestProbability = v.getlogPhi(false) + logCoarse - u.getlogPhi(false) - logCoarseProp;
 
           if (logalpha < logtestProbability){
             accept = true;
@@ -67,13 +75,17 @@ namespace Zonkey {
         int subChain_length;
 
         PROPOSAL& myProposal;
+
         ForwardModel& F;
+
+        double logCoarse, logCoarseProp;
 
 
     };
 
 
-
+}
+}
 
 
 #endif

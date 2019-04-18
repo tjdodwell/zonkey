@@ -35,7 +35,7 @@ namespace Zonkey {
       }
 
 
-      void inline run(int numSamples, int level = 0, string printout = "Computing Samples ..."){
+      void inline run(int numSamples, int level = 0, string printout = "Computing Samples ...", bool verb = true){
 
           if(markovChain.size() < 1){ // If this is the first sample
             Eigen::VectorXd theta_fP = F.samplePrior();
@@ -46,8 +46,9 @@ namespace Zonkey {
           }
 
             int x = 0;
-            cout << printout << numSamples << "Samples" << endl;
-
+            if (verb){
+              cout << printout << numSamples << "Samples" << endl;
+            }
 
           for (int i = 0; i < numSamples; i++){
 
@@ -66,12 +67,15 @@ namespace Zonkey {
             else {  markovChain.addLink(lastLink,0);  }
             x++;
 
-            int num = 100 * x / numSamples;
-            cout << "\r" << setw(-20) << printProg(num) << " " << num << "% completed." << flush;
+            if(verb){
+              int num = 100 * x / numSamples;
+              cout << "\r" << setw(-20) << printProg(num) << " " << num << "% completed." << flush;
+            }
 
           }
-
-          cout << " " << endl;
+          if(verb){
+            cout << " " << endl;
+          }
       }
 
       int inline size(){
