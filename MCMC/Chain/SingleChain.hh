@@ -41,7 +41,9 @@ namespace Zonkey {
 
       Eigen::VectorXd EffectiveSampleSizes(){
 
-        int numSamplesUsed = std::min(this->size(),10000000);
+        int num = 10000000;
+
+        int numSamplesUsed = std::min(this->size(),num);
 
         if(theChain[0].getNumQoI() > 0){
 

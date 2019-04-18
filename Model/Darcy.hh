@@ -229,11 +229,11 @@ class Darcy{
 
       }
 
-      typedef Dune::PDELab::QoI<PROBLEM,FEM> QOI;
+      /*typedef Dune::PDELab::QoI<PROBLEM,FEM> QOI;
         QOI qoi_lop(problem);
 
       typedef Dune::PDELab::GridOperator<GFS,GFS,QOI,MBE,RF,RF,RF,CC,CC> QGO;
-        QGO qgo(gfs,cc_qoi,gfs,cc_qoi,qoi_lop,mbe);
+        QGO qgo(gfs,cc,gfs,cc,qoi_lop,mbe);
 
 
       using Dune::PDELab::Backend::native;
@@ -250,7 +250,9 @@ class Darcy{
       }
 
       std::cout << " " << std::endl;
-      std::cout << Q << std::endl;
+      std::cout << Q << std::endl;*/
+      Eigen::VectorXd Q(1);
+      Q(0) = xi(0);
       u.setQoI(Q);
 
       // Compute logLikelihood

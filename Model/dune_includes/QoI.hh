@@ -50,8 +50,8 @@ namespace Dune {
       enum { doPatternVolume = true };
 
       // residual assembly flags
-      enum { doAlphaVolume = false };
-      enum { doAlphaBoundary = true };
+      enum { doAlphaVolume = true };
+      enum { doAlphaBoundary = false };
 
       QoI (T& param_, int intorderadd_=0)
         : param(param_), intorderadd(intorderadd_)
@@ -62,6 +62,77 @@ namespace Dune {
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
       {
+        // Define types
+        using RF = typename LFSU::Traits::FiniteElementType::
+          Traits::LocalBasisType::Traits::RangeFieldType;
+        using size_type = typename LFSU::Traits::SizeType;
+
+        // dimensions
+        const int dim = EG::Entity::dimension;
+
+        // Reference to cell
+        const auto& cell = eg.entity();
+
+        // Get geometry
+        auto geo = eg.geometry();
+
+        // evaluate diffusion tensor at cell center, assume it is constant over elements
+        auto ref_el = referenceElement(geo);
+        auto localcenter = ref_el.position(0,0);
+        auto tensor = param.A(cell,localcenter);
+
+        // Initialize vectors outside for loop
+        std::vector<Dune::FieldVector<RF,dim> > gradphi(lfsu.size());
+        Dune::FieldVector<RF,dim> gradu(0.0);
+        Dune::FieldVector<RF,dim> Agradu(0.0);
+
+        // Transformation matrix
+        typename EG::Geometry::JacobianInverseTransposed jac;
+
+        // loop over quadrature points
+        auto intorder = intorderadd+2*lfsu.finiteElement().localBasis().order();
+        for (const auto& ip : quadratureRule(geo,intorder))
+          {
+            // update all variables dependent on A if A is not cell-wise constant
+            if (!Impl::permeabilityIsConstantPerCell<T>(param))
+            {
+              tensor = param.A(cell, ip.position());
+            }
+
+            // evaluate basis functions
+            auto& phi = cache.evaluateFunction(ip.position(),lfsu.finiteElement().localBasis());
+
+            // evaluate u
+            RF u=0.0;
+            for (size_type i=0; i<lfsu.size(); i++)
+              u += x(lfsu,i)*phi[i];
+
+            // evaluate gradient of shape functions (we assume Galerkin method lfsu=lfsv)
+            auto& js = cache.evaluateJacobian(ip.position(),lfsu.finiteElement().localBasis());
+
+            // transform gradients of shape functions to real element
+            jac = geo.jacobianInverseTransposed(ip.position());
+            for (size_type i=0; i<lfsu.size(); i++)
+              jac.mv(js[i][0],gradphi[i]);
+
+            // compute gradient of u
+            gradu = 0.0;
+            for (size_type i=0; i<lfsu.size(); i++)
+              gradu.axpy(x(lfsu,i),gradphi[i]);
+
+            // compute A * gradient of u
+            tensor.mv(gradu,Agradu);
+
+            // evaluate velocity field, sink term and source term
+            auto b = param.b(cell,ip.position());
+            auto c = param.c(cell,ip.position());
+            auto f = param.f(cell,ip.position());
+
+            // integrate (A grad u)*grad phi_i - u b*grad phi_i + c*u*phi_i
+            RF factor = ip.weight() * geo.integrationElement(ip.position());
+            for (size_type i=0; i<lfsu.size(); i++)
+              r.accumulate(lfsu,i,( Agradu[0]*gradphi[i][0])*factor);
+          }
 
       }
 
@@ -103,8 +174,7 @@ namespace Dune {
         auto intersection = ig.intersection();
         auto bctype = param.bctype(intersection,local_face_center);
 
-        // skip rest if we are on Dirichlet boundary
-        if (bctype==ConvectionDiffusionBoundaryConditions::Dirichlet) return;
+
 
         // loop over quadrature points and integrate normal flux
         auto intorder = intorderadd+2*lfsu_s.finiteElement().localBasis().order();
