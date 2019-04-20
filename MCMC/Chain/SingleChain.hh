@@ -39,13 +39,64 @@ namespace Zonkey {
 
       int inline size(){ return theChain.size(); }
 
-      Eigen::VectorXd EffectiveSampleSizes(){
+      Eigen::VectorXd inline mean(bool param = false){ 
+        int numParam = theChain[0].size(param); // Number of Parameters
+        Eigen::VectorXd mu(numParam); 
+        for (int j = 0; j < numParam; j++){
+            mu(j) = 0.0;
+            for (int i = burninLength; i < this->size(); i++){
+              if(param == false){
+                mu(j) += theChain[i].getQ(j);
+              }
+              else{
+                mu(j) += theChain[i].getTheta(j);
+              }
+            }
+            mu(j) /= (double) (this->size() - burninLength);
+        }
+        return mu;
+      }
+
+      Eigen::VectorXd inline variance(bool param = false){
+        int numParam = theChain[0].size(param);
+        Eigen::VectorXd var(numParam);
+        auto mu  = this->mean(param);
+        for (int j = 0; j < numParam; j++){
+            var(j) = 0.0;
+            for (int i = burninLength; i < this->size(); i++){
+              if(param == false){
+                var(j) += std::pow(theChain[i].getQ(j) - mu,2);
+              }
+              else{
+                var(j) += std::pow(theChain[i].getTheta(j) - mu,2);
+              }
+            }
+            var(j) /= (double) (this->size() - burninLength - 1);
+        }
+        return var;
+      }
+
+      Eigen::VectorXd inline samplingError(bool param = true){
+        Eigen::VectorXd es(0);
+        auto var = this->variance(param);
+        auto Neff = this->EffectiveSampleSizes(param);
+        int numParam = var.size(param);
+        es.resize(numParam);
+        for (int j = 0; j < numParam; j++){
+              es(j) = var(j) / Neff(j);
+        }
+        return es;
+      }
+
+     
+
+      Eigen::VectorXd EffectiveSampleSizes(bool param = false){
 
         int num = 10000000;
 
         int numSamplesUsed = std::min(this->size(),num);
 
-        if(theChain[0].getNumQoI() > 0){
+        if(param == false){
 
           Eigen::VectorXd ESS(theChain[0].getNumQoI());
           for (int j = 0; j < theChain[0].getNumQoI(); j++){
@@ -82,14 +133,14 @@ namespace Zonkey {
 
       Eigen::VectorXd getESS_All(){ return this->EffectiveSampleSizes(); }
 
-      double getMaxESS(){
-        Eigen::VectorXd ESS = this->EffectiveSampleSizes();
+      double getMaxESS(bool param = false){
+        Eigen::VectorXd ESS = this->EffectiveSampleSizes(param);
         double max = ESS.maxCoeff();
         return max;
       }
 
-      double getMinESS(){
-        Eigen::VectorXd ESS = this->EffectiveSampleSizes();
+      double getMinESS(bool param = false){
+        Eigen::VectorXd ESS = this->EffectiveSampleSizes(param);
         return ESS.minCoeff();
       }
 
@@ -104,11 +155,15 @@ namespace Zonkey {
          return ratio;
       }
 
+      void setBurninLength(int N){burninLength = N;}
+
 
 
   private:
 
     std::vector<Link> theChain;
+
+    int burninLength;
 
 
   };

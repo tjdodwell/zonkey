@@ -35,6 +35,7 @@ public:
   double getTheta(int i) const{return theta(i); }
 	int getAccept(){	return accept;}
 	VectorXd getQ(){ 	return Q;}
+	double getQ(int i) const{return Q(i); }
 
   int getNumQoI(){ return numQoI; }
 
@@ -84,7 +85,15 @@ public:
 		}
 		}
 
-    int size(){return theta.size(); }
+    int size(bool param = false){
+    	if(param){
+    		return theta.size();
+    	}
+    	else{
+    		return Q.size();
+    	}
+
+    }
 
 
 private:

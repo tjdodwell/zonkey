@@ -110,6 +110,59 @@ class Darcy{
 
     }
 
+    void inline plot_field(const Eigen::VectorXd& theta,  std::string title = "randomfield", int level = -1){
+
+      std::vector<double> xi_vec(theta.size());
+
+      for (int i = 0; i < theta.size(); i++){
+        xi_vec[i] = theta(i);
+      }
+
+      field.setXi(xi_vec);
+
+      if(level < 0){
+        level = grid.maxLevel();
+      }
+
+    typedef typename GRID::LevelGridView GV;
+        GV gv = grid.levelGridView(level); // Get finest grid
+
+    typedef typename GV::Grid::ctype Coord;
+
+    typedef typename GV::Grid::ctype e_ctype;
+    typedef Dune::PDELab::QkDGLocalFiniteElementMap<e_ctype,double,0,2> Q0;
+
+    std::cout << "My Grid Size " << gv.size(0) << std::endl;
+
+    //typedef Dune::PDELab::QkLocalFiniteElementMap<GV,Coord,double,0> Q0;
+        Q0 fem;
+    typedef Dune::PDELab::ConformingDirichletConstraints CON;
+    typedef Dune::PDELab::ISTL::VectorBackend<> VBE;
+    typedef Dune::PDELab::GridFunctionSpace<GV, Q0, CON, VBE> GFS;
+        GFS gfs(gv,fem); gfs.name("random_field");
+
+    typedef typename Dune::PDELab::Backend::impl::BackendVectorSelector<GFS,double>::Type U;
+        U k(gfs,0.0);
+
+    using Dune::PDELab::Backend::native;
+
+    for (const auto& eit : elements(gv)){
+      int id = gv.indexSet().index(eit);
+      native(k)[id] = field.getPerm(eit.geometry().center());
+    }
+
+    typedef Dune::PDELab::DiscreteGridFunction<GFS,U> DGF;
+        DGF xdgf(gfs,k);
+
+    // Write solution to VTK
+          Dune::VTKWriter<GV> vtkwriter(gv);
+          typedef Dune::PDELab::VTKGridFunctionAdapter<DGF> ADAPT;
+          auto adapt = std::make_shared<ADAPT>(xdgf,title);
+          vtkwriter.addVertexData(adapt);
+          vtkwriter.write(title);
+    
+}
+
 
     Eigen::VectorXd samplePrior(int level = 0){
       std::random_device rd;

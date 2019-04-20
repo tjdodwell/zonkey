@@ -26,6 +26,8 @@ namespace Zonkey {
         int currentEss = markovChain.getMaxESS() + 1; // Rounding up
         double moreSamples = est_ACT - factor * currentEss;
         if (moreSamples > 0){ run(moreSamples,level, "More burnin samples . . . "); }
+        burninSamples = markovChain.size();
+        markovChain.setBurninLength(burninSamples);
       }
 
       void inline setStart(Eigen::VectorXd & xi, int level = 0){
@@ -110,6 +112,7 @@ namespace Zonkey {
       ForwardModel F;
       Chain markovChain;
       PROPOSAL proposal;
+      int burninSamples;
 
   };
 
