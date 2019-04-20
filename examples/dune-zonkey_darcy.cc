@@ -5,6 +5,7 @@
 # include "config.h"
 #endif
 #include <iostream>
+#include <fstream>
 
 // C++ includes
 #include<math.h>
@@ -72,17 +73,20 @@
 
 #include "/Users/td336/zonkey/MCMC/Proposals/SeqDA.hh"
 
+
 int main(int argc, char** argv)
 {
   try{
     // Maybe initialize MPI
     Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
+    
 
-        int Nsamples = 1000;
+        int burnin = 1000;
+        int Nsamples = 5000;
 
         const int M0 = 8;
 
-        const int maxL = 4;
+        const int maxL = 1;
 
         const int dim = 2;
 
@@ -101,7 +105,7 @@ int main(int argc, char** argv)
         N[1] = M0 + 1;
 
         Grid grid(L,N);
-
+        
         grid.globalRefine(maxL);
 
         Eigen::VectorXd PCN_parameters(2);
@@ -129,18 +133,8 @@ int main(int argc, char** argv)
         Zonkey::MCMC::MetropolisHastings<LINK,CHAIN,DA,MODEL> myMCMC(F,seqDA,markovChain);
 
         // Test the model
-
-        /*Eigen::VectorXd xi = F.samplePrior();
-
-        std::cout << xi << std::endl;
-
-        LINK testSample(xi);
-
-        int level = 0;
-
-        F.apply(testSample,level,true);*/
-
-        myMCMC.burnin(1000,1);
+        
+        myMCMC.burnin(burnin,1);
 
         myMCMC.run(Nsamples,1);
 
@@ -149,6 +143,28 @@ int main(int argc, char** argv)
         std::cout << "Effective Sample size / Samples = " << theChain.getMaxESS() << " / " << theChain.size() << std::endl;
 
         std::cout << "Acceptance Ratio = " << theChain.acceptRatio() << std::endl;
+
+        std::cout << "The mean values " << std::endl;
+
+        auto xi_mean = theChain.mean(true);
+
+        std::cout << "Mean field" <<  std::endl;
+
+        std::cout << xi_mean << std::endl;
+
+        F.plot_field(xi_mean,"mean_field");
+
+        Eigen::VectorXd real_data(maxR);
+
+        std::ifstream fin("data.txt");
+        for (int i = 0; i < maxR; i++)
+        {
+          fin >> real_data(i);
+        }
+
+        F.plot_field(real_data,"data_field");
+
+
 
 
     return 0;
