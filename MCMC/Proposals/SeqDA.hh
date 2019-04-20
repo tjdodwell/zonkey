@@ -16,12 +16,17 @@ namespace Zonkey {
           myProposal(myProposal_),
           F(F_){
 
+            count = 0;
+            sig_pcn = myProposal.getScaling();
+
 
         }
 
         LINK apply(LINK& currentState){
           Eigen::VectorXd xi = currentState.getTheta();
           CHAIN markovChain; // Setup a sub chain
+          
+          myProposal.setCounter(count);
           MetropolisHastings<LINK,CHAIN,PROPOSAL,ForwardModel> myMCMC(F,myProposal,markovChain);
           myMCMC.setStart(xi,0);
           myMCMC.run(1,0,"",false);
@@ -30,6 +35,8 @@ namespace Zonkey {
           myMCMC.run(subChain_length-1,0,"",false);
 
           auto mc = myMCMC.getChain();
+
+          count += mc.size();
           auto prop = mc.back();
           logCoarseProp = prop.getlogPhi();
           return prop; // Return Proposal from SeqDA
@@ -79,6 +86,10 @@ namespace Zonkey {
         ForwardModel& F;
 
         double logCoarse, logCoarseProp;
+
+        int count;
+
+        double sig_pcn;
 
 
     };
