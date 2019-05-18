@@ -79,7 +79,7 @@ public:
 
     typename Traits::DomainType xglobal = e.geometry().global(x);
 
-      return 0.0;
+      return 1.0;
 
   }
 

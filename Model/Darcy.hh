@@ -179,7 +179,7 @@ class Darcy{
     } // samplePrior
 
 
-    void apply(Link& u, int level = 0, bool plotSolution = false){
+    void apply(Link& u, int level = 0, bool plotSolution = false, bool setasData = false){
 
       // Unwrap Xi
 
@@ -283,7 +283,14 @@ class Darcy{
 
         F(i) = val[0];
 
+        if (setasData){
+          Fobs(i) = F(i);
+        }
+
       }
+
+      if(setasData){std::cout << Fobs << std::endl;}
+
 
       /*typedef Dune::PDELab::QoI<PROBLEM,FEM> QOI;
         QOI qoi_lop(problem);

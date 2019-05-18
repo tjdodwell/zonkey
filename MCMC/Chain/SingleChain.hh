@@ -6,6 +6,12 @@
 
 #include <algorithm>
 
+// basic file operations
+#include <iostream>
+#include <fstream>
+#include <string>
+
+
 #include "getEss.hh"
 
 using namespace Eigen;
@@ -22,6 +28,15 @@ namespace Zonkey {
   public:
 
       SingleChain(){ }
+
+      SingleChain(std::string fileName){
+
+        readChainFromFile(fileName);
+
+        std::cout << "Chain built from file = " << fileName << std::endl;
+
+
+      }
 
 
       void addLink(Link& newLink, int accept = 0){
@@ -157,13 +172,123 @@ namespace Zonkey {
 
       void setBurninLength(int N){burninLength = N;}
 
+      void setbestObserved(Link& best_){ bestObserved = best_;}
+
+      Link getbestObserved(){ return bestObserved; }
+
+      void readChainFromFile(std::string fileName){
+
+        ifstream myfile(fileName);
+
+        std::string line;
+
+        std::getline(myfile,line); // First line is level
+
+        chainLevel = std::stoi( line );
+
+        std::cout << "This is a level = " << chainLevel << " chain" << std::endl;
+
+        std::getline(myfile,line); 
+        int Stochastic_DIM = std::stoi( line );
+
+        std::getline(myfile,line); 
+        int numQoI = std::stoi( line );
+
+        std::getline(myfile,line);
+        int N = std::stoi(line);
+
+        std::getline(myfile,line);
+        int burninLength = std::stoi(line);
+
+        for (int i = 0; i < N; i++){  // for each sample
+
+          // Initiate Link
+
+          std::getline(myfile,line);
+          std::cout << "Reading --> " << line << std::endl;
+
+          std::getline(myfile,line); // Accept / Reject
+
+          int acceptSample = std::stoi(line);
+
+          std::getline(myfile,line); // LogLikelihood
+
+          double like = std::stod(line);
+
+          std::getline(myfile,line); // LogPrior
+
+          double prior = std::stod(line);
+
+          Eigen::VectorXd vals(N);
+
+          for (int j = 0; j < Stochastic_DIM; j++){
+            std::getline(myfile,line);
+            vals(j) = std::stod(line);
+          }
+
+          Link newLink(vals);
+
+          newLink.setlogPi0(prior);
+          newLink.setlogPhi(like);
+
+          addLink(newLink,acceptSample);
+      
+        }
+  
+        while ( getline (myfile,line) )
+        {
+
+
+          cout << line << '\n';
+        }
+
+
+        myfile.close();
+
+      }
+
+      void write2File(std::string fileName, int level){
+
+        ofstream myfile;
+        myfile.open (fileName+".txt");
+       
+        myfile << level << "\n";
+        myfile << theChain[0].getSDIM() << "\n";
+        myfile << theChain[0].getNumQoI() << "\n";
+        myfile << theChain.size() << "\n";
+        myfile << burninLength << "\n";
+
+
+
+        //  Write all samples to file
+        for (int i = 0; i < theChain.size(); i++){
+          myfile << "#Sample " << i << "\n"; 
+          myfile << theChain[i].getAccept() << "\n";
+          myfile << theChain[i].getlogPhi() << "\n";
+          myfile << theChain[i].getlogPi0() << "\n";
+          myfile << theChain[i].getQ() << "\n";
+          myfile << theChain[i].getTheta() << "\n";
+        }
+
+         myfile.close();
+
+
+
+      }
+
 
 
   private:
 
     std::vector<Link> theChain;
 
+    int chainLevel;
+
     int burninLength;
+
+    Link bestObserved;
+
+    int bestObserved_id;
 
 
   };

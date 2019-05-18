@@ -11,10 +11,11 @@ namespace Zonkey {
 
       public:
 
-        SeqDA(PROPOSAL& myProposal_, ForwardModel& F_, int subChain_length_ = 10) :
+        SeqDA(PROPOSAL& myProposal_, ForwardModel& F_, int level_ = 1, int subChain_length_ = 10) :
           subChain_length(subChain_length_),
           myProposal(myProposal_),
-          F(F_){
+          F(F_),
+          level(level_){
 
             count = 0;
             sig_pcn = myProposal.getScaling();
@@ -28,11 +29,11 @@ namespace Zonkey {
           
           myProposal.setCounter(count);
           MetropolisHastings<LINK,CHAIN,PROPOSAL,ForwardModel> myMCMC(F,myProposal,markovChain);
-          myMCMC.setStart(xi,0);
-          myMCMC.run(1,0,"",false);
+          myMCMC.setStart(xi,level-1);
+          myMCMC.run(1,level-1,"",false);
           auto theChain = myMCMC.getChain();
           logCoarse = theChain[0].getlogPhi();
-          myMCMC.run(subChain_length-1,0,"",false);
+          myMCMC.run(subChain_length-1,level-1,"",false);
 
           auto mc = myMCMC.getChain();
 
@@ -87,7 +88,7 @@ namespace Zonkey {
 
         double logCoarse, logCoarseProp;
 
-        int count;
+        int count, level;
 
         double sig_pcn;
 

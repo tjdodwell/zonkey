@@ -81,6 +81,8 @@ namespace Zonkey {
 
             log_sig_new = std::log(sig) + gamma * (alpha - optimal_alpha);
 
+            std::cout << log_sig_new << std::endl;
+
             sig = std::exp(log_sig_new);
 
           }

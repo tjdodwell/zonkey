@@ -18,7 +18,11 @@ namespace Zonkey {
         F(F_),
         proposal(proposal_),
         markovChain(markovChain_)
-        {  }
+        {  
+
+          bestObserved.setlogPhi(-10.0e6);
+
+        }
 
 
       void inline burnin(int est_ACT, int level = 0, int factor = 10){
@@ -60,6 +64,13 @@ namespace Zonkey {
 
             F.apply(theta_p,level);  // Apply forward Model
 
+            // 
+
+            if (theta_p.getlogPhi() > bestObserved.getlogPhi()){
+              bestObserved = theta_p;
+            }
+
+
             // Accept / Reject Step
             bool accept = proposal.acceptReject(lastLink,  theta_p);
 
@@ -78,6 +89,8 @@ namespace Zonkey {
           if(verb){
             cout << " " << endl;
           }
+
+          markovChain.setbestObserved(bestObserved);
       }
 
       int inline size(){
@@ -113,6 +126,8 @@ namespace Zonkey {
       Chain markovChain;
       PROPOSAL proposal;
       int burninSamples;
+
+      Link bestObserved;
 
   };
 
