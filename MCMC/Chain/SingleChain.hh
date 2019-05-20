@@ -191,6 +191,8 @@ namespace Zonkey {
         std::getline(myfile,line); 
         int Stochastic_DIM = std::stoi( line );
 
+        std::cout << "Stochastic_DIM = " << line << std::endl;
+
         std::getline(myfile,line); 
         int numQoI = std::stoi( line );
 
@@ -217,7 +219,15 @@ namespace Zonkey {
 
           std::getline(myfile,line); // LogPrior
 
-          double prior = std::stod(line);
+          double prior = 0.0; // std::stod(line);
+
+
+          Eigen::VectorXd QoI_vals(numQoI);
+          for (int j = 0; j < numQoI; j++){
+            std::getline(myfile,line); // QoI j
+            QoI_vals[j] = std::stod(line);
+          }
+
 
           Eigen::VectorXd vals(N);
 

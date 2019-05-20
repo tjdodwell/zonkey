@@ -30,14 +30,14 @@ class Darcy{
 
       // == Parameters from the Section 4. Dodwell et al. 2015
 
-      sigf = 0.031622776601684;
+      sigf = 0.01; //0.031622776601684;
 
       // == Setup Random Field
 
       double L = 1.0;
       double sigKl = 1.0;
       double correlation_length = 0.5;
-      int maxR = 169;
+      int maxR = 20; //169;
 
       field.setup(L,sigKl,correlation_length,maxR);
 
