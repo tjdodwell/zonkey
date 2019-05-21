@@ -50,8 +50,8 @@ namespace Dune {
       enum { doPatternVolume = true };
 
       // residual assembly flags
-      enum { doAlphaVolume = true };
-      enum { doAlphaBoundary = false };
+      enum { doAlphaVolume = false};
+      enum { doAlphaBoundary = true };
 
       QoI (T& param_, int intorderadd_=0)
         : param(param_), intorderadd(intorderadd_)
@@ -62,7 +62,7 @@ namespace Dune {
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
       {
-        // Define types
+        /*// Define types
         using RF = typename LFSU::Traits::FiniteElementType::
           Traits::LocalBasisType::Traits::RangeFieldType;
         using size_type = typename LFSU::Traits::SizeType;
@@ -80,6 +80,7 @@ namespace Dune {
         auto ref_el = referenceElement(geo);
         auto localcenter = ref_el.position(0,0);
         auto tensor = param.A(cell,localcenter);
+
 
         // Initialize vectors outside for loop
         std::vector<Dune::FieldVector<RF,dim> > gradphi(lfsu.size());
@@ -120,6 +121,7 @@ namespace Dune {
             for (size_type i=0; i<lfsu.size(); i++)
               gradu.axpy(x(lfsu,i),gradphi[i]);
 
+
             // compute A * gradient of u
             tensor.mv(gradu,Agradu);
 
@@ -132,7 +134,7 @@ namespace Dune {
             RF factor = ip.weight() * geo.integrationElement(ip.position());
             for (size_type i=0; i<lfsu.size(); i++)
               r.accumulate(lfsu,i,( Agradu[0]*gradphi[i][0])*factor);
-          }
+          }*/
 
       }
 
@@ -197,46 +199,24 @@ namespace Dune {
         auto coords = geo.center();
 
 
-        if(coords[0] > 1.0 - 1e-6){
+        if(coords[0] <  1e-6){
 
+              Dune::FieldVector<double,2> local(0.5);
 
+              auto k = param.A(cell_inside,local);
 
-                  for (const auto& ip : quadratureRule(geo,intorder))
-                    {
-                      // position of quadrature point in local coordinates of element
-                      auto local = geo_in_inside.global(ip.position());
+              double h = std::abs(geo.corner(0)[1] - geo.corner(1)[1]);
 
-                      auto tensor = param.A(cell_inside,local);
+              auto flux = 0.5 * k[0][0] * (x_s(lfsu_s,1) + x_s(lfsu_s,3));
+              
+              // Share flux equally between two nodes
 
-                      // evaluate shape functions (assume Galerkin method)
-                      auto& phi = cache.evaluateFunction(local,lfsu_s.finiteElement().localBasis());
+              r_s.accumulate(lfsu_s, 0, 0.5 * flux); 
+              
+              r_s.accumulate(lfsu_s, 2, 0.5 * flux);
 
-                      // evaluate gradient of shape functions (we assume Galerkin method lfsu=lfsv)
-                      auto& js = cache.evaluateJacobian(local,lfsu_s.finiteElement().localBasis());
-
-                      // transform gradients of shape functions to real element
-                      jac = geo.jacobianInverseTransposed(ip.position());
-                      for (size_type i=0; i<lfsu_s.size(); i++)
-                        jac.mv(js[i][0],gradphi[i]);
-
-                      // compute gradient of u
-                      gradp = 0.0;
-                      for (size_type i=0; i<lfsu_s.size(); i++)
-                        gradp.axpy(x_s(lfsu_s,i),gradphi[i]);
-
-                      // compute A * gradient of p
-                      tensor.mv(gradp,Agradp);
-
-
-                      auto factor = ip.weight()*geo.integrationElement(ip.position());
-
-                      for (size_type i=0; i<lfsu_s.size(); i++)
-                        r_s.accumulate(lfsu_s,i,-Agradp[0]*phi[i]*factor);
-
-                    }
-
-        } //
-      }
+        }  // end if on right hand boundary
+      } // end alpha_boundary
 
       // jacobian contribution from boundary
       template<typename IG, typename LFSU, typename X, typename LFSV, typename M>

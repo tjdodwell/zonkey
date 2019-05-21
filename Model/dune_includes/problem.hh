@@ -29,7 +29,7 @@ public:
 
   //  std::cout << "This is rank = " << gv.comm().rank() << " try it here " << xglobal << std::endl;
 
-    double coeff = std::exp(field.getPerm(xglobal));
+    double coeff = field.getPerm(xglobal);
 
   //  std::cout << "Otherside  rank = " << gv.comm().rank() << std::endl;
 

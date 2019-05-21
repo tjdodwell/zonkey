@@ -30,7 +30,7 @@ class Darcy{
 
       // == Parameters from the Section 4. Dodwell et al. 2015
 
-      sigf = 0.01; //0.031622776601684;
+      sigf = 0.031622776601684;//0.01; //0.031622776601684;
 
       // == Setup Random Field
 
@@ -235,6 +235,9 @@ class Darcy{
         G g(gv,problem);
       Dune::PDELab::interpolate(g,gfs,x);
 
+
+
+
       // Assemble constraints
       typedef typename GFS::template
         ConstraintsContainer<RF>::Type CC;
@@ -289,14 +292,14 @@ class Darcy{
 
       }
 
-      if(setasData){std::cout << Fobs << std::endl;}
+      //if(setasData){std::cout << Fobs << std::endl;}
 
 
-      /*typedef Dune::PDELab::QoI<PROBLEM,FEM> QOI;
+      typedef Dune::PDELab::QoI<PROBLEM,FEM> QOI;
         QOI qoi_lop(problem);
 
       typedef Dune::PDELab::GridOperator<GFS,GFS,QOI,MBE,RF,RF,RF,CC,CC> QGO;
-        QGO qgo(gfs,cc,gfs,cc,qoi_lop,mbe);
+        QGO qgo(gfs,cc_qoi,gfs,cc_qoi,qoi_lop,mbe);
 
 
       using Dune::PDELab::Backend::native;
@@ -308,14 +311,14 @@ class Darcy{
 
       Eigen::VectorXd Q(1);
       Q(0) = 0.0;
+
+     // std::cout << "This is the values in the right handside" << std::endl;
       for (int i = 0; i < native(q).size(); i++){
         Q(0) += native(q)[i];
       }
 
-      std::cout << " " << std::endl;
-      std::cout << Q << std::endl;*/
-      Eigen::VectorXd Q(1);
-      Q(0) = xi(0);
+      //Eigen::VectorXd Q(1);
+      //Q(0) = xi(0);
       u.setQoI(Q);
 
       // Compute logLikelihood
@@ -323,7 +326,7 @@ class Darcy{
 
       double logLikelihood = 0.0;
       for (int k = 0; k < Nobs; k++){
-        logLikelihood -= (F(k) - Fobs(k)) * (F(k) - Fobs(k))  / (sigf * sigf);
+        logLikelihood -= (F(k) - Fobs(k)) * (F(k) - Fobs(k))  / (2.0 * sigf * sigf);
       }
 
       u.setlogPhi(logLikelihood);

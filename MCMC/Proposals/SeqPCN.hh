@@ -17,7 +17,7 @@ namespace Zonkey {
 
       public:
 
-        SeqPCN(Eigen::VectorXd & param_, bool optimize_scaling_ = true):
+        SeqPCN(Eigen::VectorXd & param_, bool optimize_scaling_ = false):
           param(param_),
           optimize_scaling(optimize_scaling_){
           assert(param.size() == 2 && "param input wrong length for SeqPCN, should be length 2"); //a

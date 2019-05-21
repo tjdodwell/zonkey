@@ -202,7 +202,7 @@ namespace Zonkey {
         std::getline(myfile,line);
         int burninLength = std::stoi(line);
 
-        for (int i = 0; i < N; i++){  // for each sample
+        for (int i = burninLength; i < N; i++){  // for each sample
 
           // Initiate Link
 
@@ -244,16 +244,24 @@ namespace Zonkey {
           addLink(newLink,acceptSample);
       
         }
-  
-        while ( getline (myfile,line) )
-        {
 
-
-          cout << line << '\n';
-        }
 
 
         myfile.close();
+
+      }
+
+      void writeQoI(std::string filename, int level){
+
+        ofstream myfile;
+        myfile.open(filename+".txt");
+
+        for (int i = burninLength; i < theChain.size(); i++){
+          for (int j = 0; j < theChain[0].getNumQoI(); j++){
+            myfile << theChain[i].getQ() << "\t";
+          }
+          myfile  << "\n";
+        }
 
       }
 
@@ -271,13 +279,15 @@ namespace Zonkey {
 
 
         //  Write all samples to file
-        for (int i = 0; i < theChain.size(); i++){
-          myfile << "#Sample " << i << "\n"; 
-          myfile << theChain[i].getAccept() << "\n";
-          myfile << theChain[i].getlogPhi() << "\n";
-          myfile << theChain[i].getlogPi0() << "\n";
-          myfile << theChain[i].getQ() << "\n";
-          myfile << theChain[i].getTheta() << "\n";
+        for (int i = burninLength; i < theChain.size(); i++){
+
+          int cnt = i - burninLength;
+          myfile << "#Sample " << cnt << "\n"; 
+          myfile << theChain[cnt].getAccept() << "\n";
+          myfile << theChain[cnt].getlogPhi() << "\n";
+          myfile << theChain[cnt].getlogPi0() << "\n";
+          myfile << theChain[cnt].getQ() << "\n";
+          myfile << theChain[cnt].getTheta() << "\n";
         }
 
          myfile.close();

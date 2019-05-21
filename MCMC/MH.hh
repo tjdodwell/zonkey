@@ -28,7 +28,7 @@ namespace Zonkey {
       void inline burnin(int est_ACT, int level = 0, int factor = 10){
         run(est_ACT,level,"Initial Burnin . . . ");
         int currentEss = markovChain.getMaxESS() + 1; // Rounding up
-        double moreSamples = est_ACT - factor * currentEss;
+        double moreSamples = factor * currentEss - est_ACT;
         if (moreSamples > 0){ run(moreSamples,level, "More burnin samples . . . "); }
         burninSamples = markovChain.size();
         markovChain.setBurninLength(burninSamples);
