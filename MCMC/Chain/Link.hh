@@ -25,17 +25,33 @@ public:
 	int accept;
 
 
-	Link(): accept(0), theta(STOCHASTIC_DIM), Q(numQoI) {}; // Default Constructor
+	Link(): accept(0), theta(STOCHASTIC_DIM), Q(numQoI), Qc(numQoI) {}; // Default Constructor
 
-	Link(Eigen::VectorXd& theta_): theta(theta_), accept(0), Q(numQoI) {};
+	Link(Eigen::VectorXd& theta_): theta(theta_), accept(0), Q(numQoI), Qc(numQoI) {};
 
 	int getSDIM(){return STOCHASTIC_DIM;}
 	VectorXd getTheta() const{return theta;}
 
   double getTheta(int i) const{return theta(i); }
 	int getAccept(){	return accept;}
-	VectorXd getQ(){ 	return Q;}
-	double getQ(int i) const{return Q(i); }
+	VectorXd getQ(bool isCoarse = false){ 	
+		if(isCoarse){
+			return Qc;
+		}
+		else{
+			return Q;
+		}
+	}
+	double getQ(int i, bool isCoarse = false) const{
+
+		if(isCoarse){
+			return Qc(i);
+		}
+		else{
+			return Q(i);
+		}
+		
+	}
 
   int getNumQoI(){ return numQoI; }
 
@@ -50,6 +66,10 @@ public:
 	void setlogPhi_Coarse(double val) { logPhi_Coarse = val;}
 
 	double getlogPhi_Coarse() { return logPhi_Coarse; }
+
+	Eigen::VectorXd getY(){ return Q - Qc; }
+
+	double getY(int i){ return Q(i) - Qc(i); }
 
 
 	void operator=(Link &u){
@@ -68,9 +88,10 @@ public:
 	}
 
 
-	void setQoI(VectorXd & vals){
+	void setQoI(VectorXd & vals, bool isCoarse = false){
 		assert(vals.size() == numQoI);
-		Q = vals;
+		if(isCoarse){ Qc = vals; }
+		else{ Q = vals; }
 	}
 
 
@@ -105,7 +126,7 @@ private:
 
 
 	VectorXd theta;
-	VectorXd Q;
+	VectorXd Q, Qc;
 
 };
 

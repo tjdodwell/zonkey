@@ -30,7 +30,7 @@ class Darcy{
 
       // == Parameters from the Section 4. Dodwell et al. 2015
 
-      sigf = 0.031622776601684;//0.01; //0.031622776601684;
+      sigf = 0.01; //0.031622776601684;//0.01; //0.031622776601684;
 
       // == Setup Random Field
 
@@ -42,7 +42,7 @@ class Darcy{
       field.setup(L,sigKl,correlation_length,maxR);
 
 
-      int nobs = 5;
+      int nobs = 4;
       Nobs = nobs * nobs;
 
 
@@ -80,7 +80,7 @@ class Darcy{
       // == Read in obs
 
       Fobs.resize(Nobs);
-
+/*
       Fobs(0) = 0.103861;
       Fobs(1) = 0.133822;
       Fobs(2) = 0.162300;
@@ -110,7 +110,7 @@ class Darcy{
       Fobs(22) = 0.802645;
       Fobs(23) = 0.812591;
       Fobs(24) = 0.823080;
-
+*/
     }
 
     void inline plot_field(const Eigen::VectorXd& theta,  std::string title = "randomfield", int level = -1){
@@ -128,7 +128,7 @@ class Darcy{
       }
 
     typedef typename GRID::LevelGridView GV;
-        GV gv = grid.levelGridView(level); // Get finest grid
+        GV gv = grid.levelGridView(level); 
 
     typedef typename GV::Grid::ctype Coord;
 
@@ -175,6 +175,7 @@ class Darcy{
       for (int i = 0; i < STOCHASTIC_DIM; i++){
         z(i) = dis(gen);
       }
+
       return z; // Sample from prior - note Sigma = C' * C
     } // samplePrior
 
@@ -319,15 +320,18 @@ class Darcy{
 
       //Eigen::VectorXd Q(1);
       //Q(0) = xi(0);
-      u.setQoI(Q);
+      u.setQoI(Q,false);
+
+      
 
       // Compute logLikelihood
       Eigen::VectorXd misMatch(Nobs);
 
       double logLikelihood = 0.0;
       for (int k = 0; k < Nobs; k++){
-        logLikelihood -= (F(k) - Fobs(k)) * (F(k) - Fobs(k))  / (2.0 * sigf * sigf);
+        logLikelihood -= (F(k) - Fobs(k)) * (F(k) - Fobs(k));
       }
+      logLikelihood /= (2.0 * sigf * sigf);
 
       u.setlogPhi(logLikelihood);
 

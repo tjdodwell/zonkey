@@ -12,6 +12,10 @@
 #include <string>
 
 
+#include <sys/stat.h> 
+#include <sys/types.h> 
+
+
 #include "getEss.hh"
 
 using namespace Eigen;
@@ -54,17 +58,17 @@ namespace Zonkey {
 
       int inline size(){ return theChain.size(); }
 
-      Eigen::VectorXd inline mean(bool param = false){ 
+      Eigen::VectorXd inline mean(bool param = false, int level = 0){ 
         int numParam = theChain[0].size(param); // Number of Parameters
         Eigen::VectorXd mu(numParam); 
         for (int j = 0; j < numParam; j++){
             mu(j) = 0.0;
             for (int i = burninLength; i < this->size(); i++){
-              if(param == false){
-                mu(j) += theChain[i].getQ(j);
+              if(level == 0){
+                mu(j) += theChain[i].getQ(j,false);
               }
               else{
-                mu(j) += theChain[i].getTheta(j);
+                mu(j) += theChain[i].getY(j);
               }
             }
             mu(j) /= (double) (this->size() - burninLength);
@@ -72,21 +76,24 @@ namespace Zonkey {
         return mu;
       }
 
-      Eigen::VectorXd inline variance(bool param = false){
+      Eigen::VectorXd inline variance(bool param = false, int level = 0){
         int numParam = theChain[0].size(param);
         Eigen::VectorXd var(numParam);
+
+        //Eigen::VectorXd ess = this->EffectiveSampleSizes(param);
+
         auto mu  = this->mean(param);
         for (int j = 0; j < numParam; j++){
             var(j) = 0.0;
             for (int i = burninLength; i < this->size(); i++){
-              if(param == false){
-                var(j) += std::pow(theChain[i].getQ(j) - mu,2);
+              if (level == 0){
+                var(j) += std::pow(theChain[i].getQ(j,false) - mu(j),2);
               }
               else{
-                var(j) += std::pow(theChain[i].getTheta(j) - mu,2);
+                var(j) += std::pow(theChain[i].getY(j) - mu(j),2);
               }
             }
-            var(j) /= (double) (this->size() - burninLength - 1);
+            var(j) /= (double) (theChain.size() - 1);
         }
         return var;
       }
@@ -182,6 +189,8 @@ namespace Zonkey {
 
         std::string line;
 
+        std::cout << "Do we open the file " << std::endl;
+
         std::getline(myfile,line); // First line is level
 
         chainLevel = std::stoi( line );
@@ -202,7 +211,7 @@ namespace Zonkey {
         std::getline(myfile,line);
         int burninLength = std::stoi(line);
 
-        for (int i = burninLength; i < N; i++){  // for each sample
+        for (int i = 0; i < N; i++){  // for each sample
 
           // Initiate Link
 
@@ -219,7 +228,7 @@ namespace Zonkey {
 
           std::getline(myfile,line); // LogPrior
 
-          double prior = 0.0; // std::stod(line);
+          double prior = 0; // std::stod(line);
 
 
           Eigen::VectorXd QoI_vals(numQoI);
@@ -229,7 +238,7 @@ namespace Zonkey {
           }
 
 
-          Eigen::VectorXd vals(N);
+          Eigen::VectorXd vals(Stochastic_DIM);
 
           for (int j = 0; j < Stochastic_DIM; j++){
             std::getline(myfile,line);
@@ -241,7 +250,10 @@ namespace Zonkey {
           newLink.setlogPi0(prior);
           newLink.setlogPhi(like);
 
-          addLink(newLink,acceptSample);
+
+          if (i >= burninLength){
+            addLink(newLink,acceptSample);
+          }
       
         }
 
@@ -263,36 +275,137 @@ namespace Zonkey {
           myfile  << "\n";
         }
 
+        myfile.close();
+
+        if(level > 0){
+          ofstream myfileY;
+          myfileY.open(filename+"_Y.txt");
+          for (int i = burninLength; i < theChain.size(); i++){
+          for (int j = 0; j < theChain[0].getNumQoI(); j++){
+            //std::cout << theChain[i].getY() << std::endl;
+            myfileY << theChain[i].getY() << "\t";
+          }
+          myfileY  << "\n";
+        }
+        myfileY.close();
+
+        }
+
       }
+
+      Link readSample(ifstream& myfile,std::string line){
+
+
+  // Initiate Link
+
+        Link hack;
+
+        int numQoI = hack.getNumQoI();
+        int Stochastic_DIM = hack.getSDIM();
+
+        int verb = 0;
+
+  // Function will be called when looking at one line before a new sample
+
+    std::getline(myfile,line);
+    std::cout << "Reading --> " << line << std::endl;
+
+    std::getline(myfile,line); // Accept / Reject
+
+    int acceptSample = std::stoi(line);
+
+    if(verb > 0){std::cout << line << std::endl;}
+
+    std::getline(myfile,line); // LogLikelihood
+
+    double like = std::stod(line);
+
+     if(verb > 0){std::cout << line << std::endl;}
+
+    std::getline(myfile,line); // LogPrior
+
+    double prior = 0.0; // std::stod(line);
+
+     if(verb > 0){std::cout << line << std::endl;}
+
+
+          Eigen::VectorXd QoI_vals(numQoI);
+          for (int j = 0; j < numQoI; j++){
+            std::getline(myfile,line); // QoI j
+            QoI_vals(j) = std::stod(line);
+
+             if(verb > 0){std::cout << line << std::endl;}
+          }
+
+
+          Eigen::VectorXd vals(Stochastic_DIM);
+
+          for (int j = 0; j < Stochastic_DIM; j++){
+            std::getline(myfile,line);
+            vals(j) = std::stod(line);
+             if(verb > 0){std::cout << line << std::endl;}
+          }
+
+          Link newLink(vals);
+
+          newLink.setlogPi0(prior);
+          newLink.setlogPhi(like);
+          newLink.setQoI(QoI_vals);
+
+          return newLink;
+
+}
+
 
       void write2File(std::string fileName, int level){
 
-        ofstream myfile;
-        myfile.open (fileName+".txt");
-       
-        myfile << level << "\n";
-        myfile << theChain[0].getSDIM() << "\n";
-        myfile << theChain[0].getNumQoI() << "\n";
-        myfile << theChain.size() << "\n";
-        myfile << burninLength << "\n";
+        int batch = 5000;
+
+        int numSamples = theChain.size() - burninLength;
+
+        int numFiles = (numSamples / batch);
+
+        int sample_counter = burninLength;
+
+        for (int i = 0; i < numFiles; i++){
+    
+              std::cout << "This is file number = " << i << std::endl;
+              ofstream myfile;
+              myfile.open (fileName + std::to_string(i)+".txt");
+             
+              myfile << level << "\n";
+              myfile << theChain[0].getSDIM() << "\n";
+              myfile << theChain[0].getNumQoI() << "\n";
+              myfile << theChain.size() << "\n";
+              myfile << burninLength << "\n";
+
+              int num_in_batch = batch;
+
+              if (sample_counter + batch > numSamples){
+                num_in_batch = numSamples - sample_counter;
+              }
+              
+
+              //  Write all samples to file
+              for (int i = 0; i < num_in_batch; i++){
+
+                int cnt = sample_counter + i;
+                myfile << "#Sample " << cnt << "\n"; 
+                myfile << theChain[cnt].getAccept() << "\n";
+                myfile << theChain[cnt].getlogPhi() << "\n";
+                myfile << theChain[cnt].getlogPi0() << "\n";
+                myfile << theChain[cnt].getQ() << "\n";
+                myfile << theChain[cnt].getTheta() << "\n";
+              }
+
+               myfile.close();
+
+               sample_counter += batch;
 
 
+          }
 
-        //  Write all samples to file
-        for (int i = burninLength; i < theChain.size(); i++){
-
-          int cnt = i - burninLength;
-          myfile << "#Sample " << cnt << "\n"; 
-          myfile << theChain[cnt].getAccept() << "\n";
-          myfile << theChain[cnt].getlogPhi() << "\n";
-          myfile << theChain[cnt].getlogPi0() << "\n";
-          myfile << theChain[cnt].getQ() << "\n";
-          myfile << theChain[cnt].getTheta() << "\n";
-        }
-
-         myfile.close();
-
-
+          std::cout << "*** Samples written to file ***" << std::endl;
 
       }
 

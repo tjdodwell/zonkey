@@ -17,7 +17,7 @@ namespace Zonkey {
 
       public:
 
-        SeqTwoLevel(CHAIN & coarseChain_, int subSampleRate_, Eigen::VectorXd & param_):
+        SeqTwoLevel(CHAIN & coarseChain_, Eigen::VectorXd & param_,int subSampleRate_ = 1):
           param(param_),
           subSampleRate(subSampleRate_),
           coarseChain(coarseChain_){
@@ -42,21 +42,30 @@ namespace Zonkey {
 
           auto coarseModes = coarseChain[subSampledCount].getTheta();
 
+          //std::cout << subSampledCount << std::endl;
+
           std::random_device rd;
           std::normal_distribution<double> dis(0.0,1.0);
           std::mt19937 gen(rd());
 
           for (int i = 0; i < xi.size(); i++){
-            if(i < dim_coarse){
+          //  if(i < dim_coarse){
               xip(i) =  coarseModes(i);
-            }
-            xip(i) = std::sqrt(1 - param(0) * param(0)) * xi(i) + param(0) * sig * dis(gen);
+          /*  }
+            else{
+              std::cout << "Should not get here" << std::endl;
+              xip(i) = std::sqrt(1 - param(0) * param(0)) * xi(i) + param(0) * sig * dis(gen);
+            }*/
           }
 
           LINK prop;
           prop.setTheta(xip);
 
-          return prop; // Return Proposal from SeqRandomWalk
+          Eigen::VectorXd Qc = coarseChain[subSampledCount].getQ();
+
+          prop.setQoI(Qc,true);
+
+          return prop; // Return Proposal
         }
 
         bool acceptReject(LINK& u,  LINK& v, bool verb = false){
@@ -90,6 +99,8 @@ namespace Zonkey {
             std::cout << "existing ll = " << u.getlogPhi() << std::endl;
 
           }
+
+          subSampledCount += subSampleRate;
 
           return accept;
         }

@@ -208,6 +208,12 @@ namespace Dune {
               double h = std::abs(geo.corner(0)[1] - geo.corner(1)[1]);
 
               auto flux = 0.5 * k[0][0] * (x_s(lfsu_s,1) + x_s(lfsu_s,3));
+
+              /*std::cout << "The flux is = " << flux << std::endl;
+
+              std::cout << x_s(lfsu_s,1) << std::endl;
+              std::cout << x_s(lfsu_s,3) << std::endl; */
+
               
               // Share flux equally between two nodes
 

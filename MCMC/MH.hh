@@ -20,7 +20,7 @@ namespace Zonkey {
         markovChain(markovChain_)
         {  
 
-          bestObserved.setlogPhi(-10.0e6);
+          bestObserved.setlogPhi(-10.0e6); // This will be on the fine chain only since that is all we
 
         }
 
@@ -40,11 +40,15 @@ namespace Zonkey {
         markovChain.addLink(firstPoint,1);
       }
 
+      void inline setStart(Link & firstPoint, int level = 0){
+        markovChain.addLink(firstPoint);
+      }
+
 
       void inline run(int numSamples, int level = 0, string printout = "Computing Samples ...", bool verb = true){
 
           if(markovChain.size() < 1){ // If this is the first sample
-            Eigen::VectorXd theta_fP = F.samplePrior();
+            Eigen::VectorXd theta_fP = F.samplePrior(level);
             Link firstPoint(theta_fP);
             F.apply(firstPoint,level);
             markovChain.addLink(firstPoint,1);
@@ -55,6 +59,8 @@ namespace Zonkey {
             if (verb){
               cout << printout << numSamples << "Samples" << endl;
             }
+
+          bool best_seen = false;
 
           for (int i = 0; i < numSamples; i++){
 
@@ -68,16 +74,25 @@ namespace Zonkey {
 
             if (theta_p.getlogPhi() > bestObserved.getlogPhi()){
               bestObserved = theta_p;
+              best_seen = true;
             }
 
 
             // Accept / Reject Step
             bool accept = proposal.acceptReject(lastLink,  theta_p);
 
-            if(accept){ markovChain.addLink(theta_p,1);
+            if(accept){ 
+
+              markovChain.addLink(theta_p,1);
 
             }
-            else {  markovChain.addLink(lastLink,0);  }
+            else {
+
+              markovChain.addLink(lastLink,0);  
+
+            }
+            
+
             x++;
 
             if(verb){
@@ -90,7 +105,10 @@ namespace Zonkey {
             cout << " " << endl;
           }
 
-          markovChain.setbestObserved(bestObserved);
+          if(best_seen){
+            markovChain.setbestObserved(bestObserved);
+            best_seen = false;
+          }
       }
 
       int inline size(){
