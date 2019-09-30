@@ -1,21 +1,23 @@
-#ifndef ZONKEY_MCMC_DELAYED_ACCEPTANCE_HH
-#define ZONKEY_MCMC_DELAYED_ACCEPTANCE_HH
+#ifndef ZONKEY_MCMC_HIERARCHICAL_DELAYED_ACCEPTANCE_HH
+#define ZONKEY_MCMC_HIERARCHICAL_DELAYED_ACCEPTANCE_HH
 
 #include "../MH.hh"
+
+#inlcuyde "SeqDA.hh"
 
 namespace Zonkey {
   namespace MCMC {
 
     template<typename LINK, typename CHAIN, typename PROPOSAL, typename ForwardModel>
-    class SeqDA{
+    class SeqHIERARCHICAL_DA{
 
       public:
 
-        SeqDA(PROPOSAL& myProposal_, ForwardModel& F_, int level_ = 1, int subChain_length_ = 10) :
-          subChain_length(subChain_length_),
+        SeqHIERARCHICAL_DA(PROPOSAL& myProposal_, std::vector<ForwardModel> & F_, int L_, std::vector<double>& subChain_lengths) :
+          subChain_lengths(subChain_lengths_),
           myProposal(myProposal_),
           F(F_),
-          level(level_){
+          L(L_){
 
             count = 0;
             sig_pcn = myProposal.getScaling();
@@ -27,7 +29,15 @@ namespace Zonkey {
 
           Eigen::VectorXd xi = currentState.getTheta();
 
-          CHAIN markovChain; // Setup a sub chain
+
+          
+
+
+
+          MetropolisHastings<LINK,CHAIN,,ForwardModel> myMCMC(F,myProposal,markovChain);
+
+
+          if
 
           MetropolisHastings<LINK,CHAIN,PROPOSAL,ForwardModel> myMCMC(F,myProposal,markovChain);
 
@@ -76,25 +86,19 @@ namespace Zonkey {
           return accept;
         }
 
-        void updateParameters(Eigen::VectorXd & newParam){ param = newParam; }
-
-        Eigen::VectorXd getParameters(){  return param; }
 
       private:
 
-        Eigen::VectorXd param; // Step size for random step
-
-        int subChain_length;
 
         PROPOSAL& myProposal;
 
-        ForwardModel& F;
+        std::vector<ForwardModel>& F;
 
         double logCoarse, logCoarseProp;
 
-        int count, level;
+        int count;
 
-        double sig_pcn;
+        int L; // Maximum number of Levels
 
 
     };
