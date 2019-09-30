@@ -27,14 +27,14 @@ public:
 
 	Link(): accept(0), theta(STOCHASTIC_DIM), Q(numQoI), Qc(numQoI) {}; // Default Constructor
 
-	Link(Eigen::VectorXd& theta_): theta(theta_), accept(0), Q(numQoI), Qc(numQoI) {};
+	Link(Eigen::VectorXd& theta_, int maxL_ = 1): theta(theta_), accept(0), Q(numQoI), Qc(numQoI), maxL(maxL_) {};
 
 	int getSDIM(){return STOCHASTIC_DIM;}
 	VectorXd getTheta() const{return theta;}
 
   double getTheta(int i) const{return theta(i); }
 	int getAccept(){	return accept;}
-	VectorXd getQ(bool isCoarse = false){ 	
+	VectorXd getQ(bool isCoarse = false){
 		if(isCoarse){
 			return Qc;
 		}
@@ -50,7 +50,7 @@ public:
 		else{
 			return Q(i);
 		}
-		
+
 	}
 
   int getNumQoI(){ return numQoI; }
@@ -72,12 +72,24 @@ public:
 	double getY(int i){ return Q(i) - Qc(i); }
 
 
+  void setF(int level, Eigen::VectorXd F_){ F[level] = F_;}
+
+  std::vector<Eigen::VectorXd> getF(){ return F; }
+
+  Eigen::VectorXd getF(int level){ return F[level]; }
+
+  Eigen::VectorXd getB(int level){ return F[level + 1] - F[level]; }
+
 	void operator=(Link &u){
 		// Operator Overrides class with u
 		VectorXd old = u.getTheta();
 		(*this).setTheta(old);
 		(*this).setlogPhi(u.getlogPhi(false),false);
     (*this).setlogPhi(u.getlogPhi(true),true);
+    auto tmpF = u.getF();
+    for (int i = 0; i < tmpF.size(); i++){
+      (*this).setF(i, tmpF[i]);
+    }
 		VectorXd tmpQ = u.getQ();
 		(*this).setQoI(tmpQ);
 	}
@@ -93,6 +105,7 @@ public:
 		if(isCoarse){ Qc = vals; }
 		else{ Q = vals; }
 	}
+
 
 
 	void setAccepted(int val){accept = val;} // If accepted
@@ -123,7 +136,11 @@ private:
 
 	double logPhi_Coarse;
 
+  Eigen::VectorXd B;
 
+  std::vector<Eigen::VectorXd> F;
+
+  int maxL;
 
 	VectorXd theta;
 	VectorXd Q, Qc;

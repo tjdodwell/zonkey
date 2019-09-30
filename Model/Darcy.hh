@@ -26,7 +26,7 @@ class Darcy{
 
   public:
 
-    Darcy(GRID& grid_): grid(grid_){
+    Darcy(GRID& grid_): grid(grid_, int maxLevel = 1){
 
       // == Parameters from the Section 4. Dodwell et al. 2015
 
@@ -80,6 +80,12 @@ class Darcy{
       // == Read in obs
 
       Fobs.resize(Nobs);
+
+      F.resize(maxLevel);
+
+      for (int i = 0; i < maxLevel; i++){
+        F[i].resize(Nobs);
+      }
 /*
       Fobs(0) = 0.103861;
       Fobs(1) = 0.133822;
@@ -128,7 +134,7 @@ class Darcy{
       }
 
     typedef typename GRID::LevelGridView GV;
-        GV gv = grid.levelGridView(level); 
+        GV gv = grid.levelGridView(level);
 
     typedef typename GV::Grid::ctype Coord;
 
@@ -163,7 +169,7 @@ class Darcy{
           auto adapt = std::make_shared<ADAPT>(xdgf,title);
           vtkwriter.addVertexData(adapt);
           vtkwriter.write(title);
-    
+
 }
 
 
@@ -271,8 +277,6 @@ class Darcy{
       typedef Dune::PDELab::DiscreteGridFunction<GFS,V> DGF;
         DGF xdgf(gfs,x);
 
-      Eigen::VectorXd F(Nobs);
-
       for (int i = 0; i < Nobs; i++){ // For each observation
 
         Dune::FieldVector<double,2> point(0.0);
@@ -285,10 +289,10 @@ class Darcy{
 
         probe.eval(val);
 
-        F(i) = val[0];
+        F[level](i) = val[0];
 
         if (setasData){
-          Fobs(i) = F(i);
+          Fobs(i) = F[level](i);
         }
 
       }
@@ -322,14 +326,14 @@ class Darcy{
       //Q(0) = xi(0);
       u.setQoI(Q,false);
 
-      
+
 
       // Compute logLikelihood
       Eigen::VectorXd misMatch(Nobs);
 
       double logLikelihood = 0.0;
       for (int k = 0; k < Nobs; k++){
-        logLikelihood -= (F(k) - Fobs(k)) * (F(k) - Fobs(k));
+        logLikelihood -= (F[level](k) - Fobs(k)) * (F[level](k) - Fobs(k));
       }
       logLikelihood /= (2.0 * sigf * sigf);
 
@@ -350,6 +354,9 @@ class Darcy{
 
     }
 
+    Eigen::VectorXd getFobs(){  return Fobs;  }
+    Eigen::VectorXd getF(int level){ return F[level];  }
+
 
   private:
 
@@ -363,6 +370,8 @@ class Darcy{
     GRID& grid;
 
     RandomField<2> field;
+
+    std::vector<Eigen::VectorXd> F;
 
 };
 
