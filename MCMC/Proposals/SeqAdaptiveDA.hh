@@ -20,7 +20,13 @@ namespace Zonkey {
 
             count = 1;
 
+            int dimensionData = F.getDIMData();
 
+            muB.resize(dimensionData);
+
+            SigmaE = F.getSigma()
+
+            SigmaB.resize(dimensionData,  dimensionData);
 
         }
 
@@ -70,13 +76,13 @@ namespace Zonkey {
 
           if(accept){
 
-            // Apply Adaptive Delayed Acceptance Step
+            // Update Mean and Covariance - According to Equation Equation (7) - Cui et al. Adaptive delayed acceptance MH algorithm
 
-            auto B = v.getB();
+            Eigen::VectorXd B = v.getB();
 
             mu = (1 / (count+1)) * (count * muB + B);
 
-
+            SigmaB = (1/count) * ( (count - 1) * SigmaB + (B * B.transpose()) - count * (muB * muB.transpose()))
 
           }
 
@@ -104,6 +110,8 @@ namespace Zonkey {
         int adaptive;
 
         Eigen::VectorXd muB;
+
+        Eigen::MatrixXd SigmaE, SigmaB;
 
 
     };
